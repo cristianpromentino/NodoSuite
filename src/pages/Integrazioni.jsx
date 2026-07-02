@@ -28,12 +28,18 @@ export default function Integrazioni() {
   async function callDanea(endpoint) {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token
-    const { data, error } = await supabase.functions.invoke('danea-proxy', {
-      body: { endpoint },
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
+
+    const res = await fetch('https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/danea-proxy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ endpoint })
     })
-    if (error) throw new Error(error.message)
-    return data
+
+    if (!res.ok) throw new Error(`Edge Function error: ${res.status}`)
+    return await res.json()
   }
 
   async function testConnessione() {
