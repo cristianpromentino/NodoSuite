@@ -30,7 +30,6 @@ export default function Integrazioni() {
   async function callDanea(endpoint) {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token
-
     const res = await fetch('https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/danea-proxy', {
       method: 'POST',
       headers: {
@@ -39,7 +38,6 @@ export default function Integrazioni() {
       },
       body: JSON.stringify({ endpoint })
     })
-
     if (!res.ok) throw new Error(`Edge Function error: ${res.status}`)
     return await res.json()
   }
@@ -60,48 +58,6 @@ export default function Integrazioni() {
     setLoading(false)
   }
 
-  async function sincronizzaPersone() {
-    setSyncing(true)
-    setSyncResult(null)
-    setError(null)
-    try {
-      // Carica condomini dal nostro DB per mappare danea_id → uuid
-      const { data: edificiDb } = await supabase.from('edifici').select('id, danea_id')
-      const daneaIdMap = {}
-      if (edificiDb) edificiDb.forEach(e => { if (e.danea_id) daneaIdMap[e.danea_id] = e.id })
-
-      // Recupera attivi e ex da Danea
-      const [dataAttivi, dataEx] = await Promise.all([
-        callDanea('/api/external/persona?FiltroSubentri=2'),
-        callDanea('/api/external/persona?FiltroSubentri=3'),
-      ])
-
-      if (dataAttivi?.status !== 200) throw new Error(`Danea errore attivi: ${dataAttivi?.status}`)
-      if (dataEx?.status !== 200) throw new Error(`Danea errore ex: ${dataEx?.status}`)
-
-      const attivi = (dataAttivi.data || []).map(p => mapPersona(p, 'attivo', daneaIdMap))
-      const ex = (dataEx.data || []).map(p => mapPersona(p, 'ex', daneaIdMap))
-      const tutte = [...attivi, ...ex].filter(p => p.nome_completo)
-
-      // Insert in batch (skip duplicati per nome)
-      let inseriti = 0
-      const chunks = []
-      for (let i = 0; i < tutte.length; i += 50) chunks.push(tutte.slice(i, i + 50))
-      for (const chunk of chunks) {
-        const { error } = await supabase.from('condòmini').insert(chunk)
-        if (!error) inseriti += chunk.length
-        else console.error('Sync persone error:', error.message)
-      }
-
-      setSyncResult({ totale: tutte.length, attivi: attivi.length, ex: ex.length, inseriti })
-      showToast(`✓ ${inseriti} persone sincronizzate da Danea`, 'success')
-    } catch (e) {
-      setError(e.message)
-      showToast('Errore sync persone: ' + e.message, 'error')
-    }
-    setSyncing(false)
-  }
-
   function mapPersona(p, stato, daneaIdMap) {
     const emails = Array.isArray(p.email) ? p.email : (p.email ? [p.email] : [])
     return {
@@ -116,21 +72,58 @@ export default function Integrazioni() {
       condominio_id: p.CondGendID ? (daneaIdMap[p.CondGendID] || null) : null,
     }
   }
+
+  async function sincronizzaPersone() {
     setSyncing(true)
     setSyncResult(null)
     setError(null)
     try {
-      // 1. Recupera condomini da Danea
+      const { data: edificiDb } = await supabase.from('edifici').select('id, danea_id')
+      const daneaIdMap = {}
+      if (edificiDb) edificiDb.forEach(e => { if (e.danea_id) daneaIdMap[e.danea_id] = e.id })
+
+      const [dataAttivi, dataEx] = await Promise.all([
+        callDanea('/api/external/persona?FiltroSubentri=2'),
+        callDanea('/api/external/persona?FiltroSubentri=3'),
+      ])
+
+      if (dataAttivi?.status !== 200) throw new Error(`Danea errore attivi: ${dataAttivi?.status}`)
+      if (dataEx?.status !== 200) throw new Error(`Danea errore ex: ${dataEx?.status}`)
+
+      const attivi = (dataAttivi.data || []).map(p => mapPersona(p, 'attivo', daneaIdMap))
+      const ex = (dataEx.data || []).map(p => mapPersona(p, 'ex', daneaIdMap))
+      const tutte = [...attivi, ...ex].filter(p => p.nome_completo)
+
+      let inseriti = 0
+      const chunks = []
+      for (let i = 0; i < tutte.length; i += 50) chunks.push(tutte.slice(i, i + 50))
+      for (const chunk of chunks) {
+        const { error } = await supabase.from('condòmini').insert(chunk)
+        if (!error) inseriti += chunk.length
+        else console.error('Sync persone error:', error.message)
+      }
+
+      setSyncResult({ tipo: 'persone', totale: tutte.length, attivi: attivi.length, ex: ex.length, inseriti })
+      showToast(`✓ ${inseriti} persone sincronizzate da Danea`, 'success')
+    } catch (e) {
+      setError(e.message)
+      showToast('Errore sync persone: ' + e.message, 'error')
+    }
+    setSyncing(false)
+  }
+
+  async function sincronizzaCondomini() {
+    setSyncing(true)
+    setSyncResult(null)
+    setError(null)
+    try {
       const data = await callDanea('/api/external/condominio')
       if (data?.status !== 200) throw new Error(`Danea ha risposto con status ${data?.status}`)
 
       const condominiDanea = data.data || []
-
-      // 2. Filtra quelli da escludere
       const validi = condominiDanea.filter(c => !shouldSkip(c.intestazione))
       const saltati = condominiDanea.length - validi.length
 
-      // 3. Prepara payload per Supabase
       const payload = validi.map(c => ({
         nome: c.intestazione.trim(),
         indirizzo: c.indirizzo || null,
@@ -141,7 +134,6 @@ export default function Integrazioni() {
         danea_id: c.id,
       }))
 
-      // 4. Upsert su Supabase (usa nome come chiave)
       let inseriti = 0
       let aggiornati = 0
       const chunks = []
@@ -154,7 +146,6 @@ export default function Integrazioni() {
           .in('nome', chunk.map(r => r.nome))
 
         const existingNames = new Set((existing || []).map(e => e.nome))
-
         const toInsert = chunk.filter(r => !existingNames.has(r.nome))
         const toUpdate = chunk.filter(r => existingNames.has(r.nome))
 
@@ -170,7 +161,7 @@ export default function Integrazioni() {
         }
       }
 
-      setSyncResult({ totale: condominiDanea.length, saltati, inseriti, aggiornati })
+      setSyncResult({ tipo: 'condomini', totale: condominiDanea.length, saltati, inseriti, aggiornati })
       showToast(`✓ Sync completato: ${inseriti} nuovi, ${aggiornati} aggiornati`, 'success')
     } catch (e) {
       setError(e.message)
@@ -194,7 +185,6 @@ export default function Integrazioni() {
         <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
           La connessione avviene tramite Supabase Edge Function — la APIKey è conservata sul server e non è mai esposta nel browser.
         </div>
-
         <div className="form-group" style={{ marginBottom: 14 }}>
           <label className="form-label">Endpoint da testare</label>
           <select className="form-select" value={selectedEndpoint} onChange={e => setSelectedEndpoint(e.target.value)}>
@@ -203,7 +193,6 @@ export default function Integrazioni() {
             ))}
           </select>
         </div>
-
         <button className="btn btn-outline" onClick={testConnessione} disabled={loading}>
           {loading ? '⏳ Chiamata in corso...' : '🔍 Testa connessione Danea'}
         </button>
@@ -213,14 +202,12 @@ export default function Integrazioni() {
       <div className="form-card" style={{ marginBottom: 20 }}>
         <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>👤 Sincronizza Persone</div>
         <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
-          Importa persone da Danea con stato Attivo/Ex già impostato. I condòmini attivi e gli ex vengono importati separatamente e collegati al condominio se disponibile.
+          Importa persone da Danea con stato Attivo/Ex già impostato automaticamente.
         </div>
-
         <button className="btn btn-gold" onClick={sincronizzaPersone} disabled={syncing}>
           {syncing ? '⏳ Sincronizzazione in corso...' : '👤 Sincronizza persone da Danea'}
         </button>
-
-        {syncResult?.attivi !== undefined && (
+        {syncResult?.tipo === 'persone' && (
           <div style={{ marginTop: 16, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '14px 16px' }}>
             <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>✅ Sincronizzazione completata</div>
             <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 2 }}>
@@ -237,14 +224,12 @@ export default function Integrazioni() {
       <div className="form-card" style={{ marginBottom: 20 }}>
         <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>🔄 Sincronizza Condomini</div>
         <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
-          Importa o aggiorna i condomini da Danea verso il database CondoDesk. Le voci con "NON REGISTRARE" o "SOLO LAVORI" vengono escluse automaticamente.
+          Importa o aggiorna i condomini da Danea. Le voci con "NON REGISTRARE" o "SOLO LAVORI" vengono escluse automaticamente.
         </div>
-
         <button className="btn btn-gold" onClick={sincronizzaCondomini} disabled={syncing}>
           {syncing ? '⏳ Sincronizzazione in corso...' : '🔄 Sincronizza condomini da Danea'}
         </button>
-
-        {syncResult && (
+        {syncResult?.tipo === 'condomini' && (
           <div style={{ marginTop: 16, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '14px 16px' }}>
             <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>✅ Sincronizzazione completata</div>
             <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 2 }}>
@@ -287,4 +272,3 @@ export default function Integrazioni() {
     </div>
   )
 }
-
