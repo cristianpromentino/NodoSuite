@@ -121,11 +121,11 @@ export default function Condomini() {
 
       // Estrai email dalle Note se presenti
       if (row.note) {
-        const found = row.note..match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g) || []
+        const found = row.note.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g) || []
         if (found.length > 0) {
           if (!row.email) row.email = found[0]
           else if (!row.email2) row.email2 = found[0]
-          row.note = row.note..replace(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g, '').replace(/[,;]\s*$/, '').trim() || null
+          row.note = row.note.replace(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g, '').replace(/[,;]\s*$/, '').trim() || null
         }
       }
 
