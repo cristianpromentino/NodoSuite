@@ -1,268 +1,249 @@
-import { useState } from 'react'
-import { useApp } from '../App'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useApp } from '../App'
 
-const SKIP_KEYWORDS = ['non registrare', 'solo lavori', 'lavori']
+const STATO_LABEL = { in_attesa: 'In attesa', in_corso: 'In corso', completato: 'Completato', bloccato: 'Bloccato' }
+const ORIGINE_LABEL = { verbale: 'Verbale', diretto: 'Diretto', segnalazione: 'Segnalazione' }
 
-function shouldSkip(intestazione) {
-  const lower = intestazione.toLowerCase()
-  return SKIP_KEYWORDS.some(k => lower.includes(k))
-}
+export default function Incarichi() {
+  const { navigate, profilo, showToast } = useApp()
+  const [incarichi, setIncarichi] = useState([])
+  const [edifici, setEdifici] = useState([])
+  const [fornitori, setFornitori] = useState([])
+  const [condominiFiltered, setCondominiFiltered] = useState([])
+  const [filtroStato, setFiltroStato] = useState('')
+  const [filtroEdificio, setFiltroEdificio] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    edificio_id: '', fornitore_id: '', descrizione: '',
+    origine: 'diretto', stato: 'in_attesa', data_scadenza: '',
+    segnalatore_id: '', segnalatore_telefono: '', segnalatore_email: ''
+  })
 
-export default function Integrazioni() {
-  const { showToast } = useApp()
-  const [loading, setLoading] = useState(false)
-  const [syncingPersone, setSyncingPersone] = useState(false)
-  const [syncingCondomini, setSyncingCondomini] = useState(false)
-  const [result, setResult] = useState(null)
-  const [syncResultPersone, setSyncResultPersone] = useState(null)
-  const [syncResultCondomini, setSyncResultCondomini] = useState(null)
-  const [error, setError] = useState(null)
-  const [error, setError] = useState(null)
-  const [selectedEndpoint, setSelectedEndpoint] = useState('/api/external/condominio')
+  useEffect(() => { loadAll() }, [])
 
-  const ENDPOINTS = [
-    { label: 'Condomini', value: '/api/external/condominio' },
-    { label: 'Persone (tutti)', value: '/api/external/persona' },
-    { label: 'Persone (attivi)', value: '/api/external/persona?FiltroSubentri=2' },
-    { label: 'Persone (ex)', value: '/api/external/persona?FiltroSubentri=3' },
-    { label: 'Assemblee', value: '/api/external/assemblea' },
-    { label: 'Fornitori', value: '/api/external/fornitore' },
-  ]
+  async function loadAll() {
+    const [{ data: inc }, { data: ed }, { data: fo }, { data: persone }] = await Promise.all([
+      supabase.from('incarichi').select('*, edifici(nome), fornitori(ragione_sociale)').order('created_at', { ascending: false }),
+      supabase.from('edifici').select('id, nome').eq('stato', 'attivo').order('nome'),
+      supabase.from('fornitori').select('id, ragione_sociale').order('ragione_sociale'),
+      supabase.from('condòmini').select('id, nome_completo, telefono, telefono2, email, email2, condominio_id').order('nome_completo'),
+    ])
+    setIncarichi(inc || [])
+    setEdifici(ed || [])
+    setFornitori(fo || [])
+    setCondominiFiltered(persone || [])
+  }
 
-  async function callDanea(endpoint, params = {}) {
-    const { data: { session } } = await supabase.auth.getSession()
-    const token = session?.access_token
-    const res = await fetch('https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/danea-proxy', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ endpoint, params })
+  async function loadCondomini(edificio_id) {
+    // Temporaneo: mostra tutte le persone, con quelle del condominio selezionato in cima
+    // Sarà filtrato per condominio dopo integrazione Danea
+    if (!edificio_id) return
+    setCondominiFiltered(prev => {
+      const linked = prev.filter(p => p.condominio_id === edificio_id)
+      const others = prev.filter(p => p.condominio_id !== edificio_id)
+      return [...linked, ...others]
     })
-    if (!res.ok) throw new Error(`Edge Function error: ${res.status}`)
-    return await res.json()
   }
 
-  async function testConnessione() {
-    setLoading(true)
-    setResult(null)
-    setError(null)
-    try {
-      const data = await callDanea(selectedEndpoint)
-      setResult(data)
-      if (data?.status === 200) showToast('✓ Connessione Danea riuscita', 'success')
-      else showToast(`Risposta Danea: ${data?.status}`, 'info')
-    } catch (e) {
-      setError(e.message)
-      showToast('Errore: ' + e.message, 'error')
-    }
-    setLoading(false)
-  }
-
-  function mapPersona(p, stato, daneaIdMap) {
-    const emails = Array.isArray(p.email) ? p.email : (p.email ? [p.email] : [])
-    return {
-      nome_completo: (p.descr || '').trim(),
-      telefono: p.tel1 || null,
-      telefono2: p.tel2 || null,
-      telefono3: p.tel3 || null,
-      email: emails[0] || null,
-      email2: emails[1] || null,
-      note: p.note || null,
-      stato,
-      condominio_id: p.CondGendID ? (daneaIdMap[p.CondGendID] || null) : null,
-    }
-  }
-
-  async function sincronizzaPersone() {
-    setSyncingPersone(true)
-    setSyncResultPersone(null)
-    setError(null)
-    try {
-      const { data: edificiDb } = await supabase.from('edifici').select('id, danea_id')
-      const daneaIdMap = {}
-      if (edificiDb) edificiDb.forEach(e => { if (e.danea_id) daneaIdMap[e.danea_id] = e.id })
-
-      const [dataAttivi, dataEx] = await Promise.all([
-        callDanea('/api/external/persona', { FiltroSubentri: 2 }),
-        callDanea('/api/external/persona', { FiltroSubentri: 3 }),
-      ])
-
-      if (dataAttivi?.status !== 200) throw new Error(`Danea errore attivi: ${dataAttivi?.status}`)
-      if (dataEx?.status !== 200) throw new Error(`Danea errore ex: ${dataEx?.status}`)
-
-      const attivi = (dataAttivi.data || []).map(p => mapPersona(p, 'attivo', daneaIdMap))
-      const ex = (dataEx.data || []).map(p => mapPersona(p, 'ex', daneaIdMap))
-      const tutte = [...attivi, ...ex].filter(p => p.nome_completo)
-
-      let inseriti = 0
-      const chunks = []
-      for (let i = 0; i < tutte.length; i += 50) chunks.push(tutte.slice(i, i + 50))
-      for (const chunk of chunks) {
-        const { error } = await supabase.from('condòmini').insert(chunk)
-        if (!error) inseriti += chunk.length
-        else console.error('Sync persone error:', error.message)
+  function setField(k, v) {
+    setForm(f => {
+      const updated = { ...f, [k]: v }
+      // Se cambia condominio, resetta segnalatore
+      if (k === 'edificio_id') {
+        updated.segnalatore_id = ''
+        updated.segnalatore_telefono = ''
+        updated.segnalatore_email = ''
+        loadCondomini(v)
       }
-
-      setSyncResultPersone({ totale: tutte.length, attivi: attivi.length, ex: ex.length, inseriti })
-      showToast(`✓ ${inseriti} persone sincronizzate da Danea`, 'success')
-    } catch (e) {
-      setError(e.message)
-      showToast('Errore sync persone: ' + e.message, 'error')
-    }
-    setSyncingPersone(false)
-  }
-
-  async function sincronizzaCondomini() {
-    setSyncingCondomini(true)
-    setSyncResultCondomini(null)
-    setError(null)
-    try {
-      const data = await callDanea('/api/external/condominio')
-      if (data?.status !== 200) throw new Error(`Danea ha risposto con status ${data?.status}`)
-
-      const condominiDanea = data.data || []
-      const validi = condominiDanea.filter(c => !shouldSkip(c.intestazione))
-      const saltati = condominiDanea.length - validi.length
-
-      const payload = validi.map(c => ({
-        nome: c.intestazione.trim(),
-        indirizzo: c.indirizzo || null,
-        cap: c.cap || null,
-        citta: c.citta || null,
-        provincia: c.prov || null,
-        codice_fiscale: c.codFisc || null,
-        danea_id: c.id,
-      }))
-
-      let inseriti = 0
-      let aggiornati = 0
-      const chunks = []
-      for (let i = 0; i < payload.length; i += 50) chunks.push(payload.slice(i, i + 50))
-
-      for (const chunk of chunks) {
-        const { data: existing } = await supabase.from('edifici').select('nome').in('nome', chunk.map(r => r.nome))
-        const existingNames = new Set((existing || []).map(e => e.nome))
-        const toInsert = chunk.filter(r => !existingNames.has(r.nome))
-        const toUpdate = chunk.filter(r => existingNames.has(r.nome))
-        if (toInsert.length > 0) {
-          const { error } = await supabase.from('edifici').insert(toInsert)
-          if (!error) inseriti += toInsert.length
-        }
-        for (const row of toUpdate) {
-          await supabase.from('edifici').update(row).eq('nome', row.nome)
-          aggiornati++
+      // Se seleziona segnalatore, precompila telefono e email
+      if (k === 'segnalatore_id' && v) {
+        const cond = condominiFiltered.find(c => c.id === v)
+        if (cond) {
+          updated.segnalatore_telefono = cond.telefono || ''
+          updated.segnalatore_email = cond.email || ''
         }
       }
-
-      setSyncResultCondomini({ totale: condominiDanea.length, saltati, inseriti, aggiornati })
-      showToast(`✓ Sync completato: ${inseriti} nuovi, ${aggiornati} aggiornati`, 'success')
-    } catch (e) {
-      setError(e.message)
-      showToast('Errore sync: ' + e.message, 'error')
-    }
-    setSyncingCondomini(false)
+      return updated
+    })
   }
+
+  async function salva() {
+    if (!form.descrizione) { showToast('La descrizione è obbligatoria', 'error'); return }
+    setSaving(true)
+    const payload = {
+      ...form,
+      edificio_id: form.edificio_id || null,
+      fornitore_id: form.fornitore_id || null,
+      segnalatore_id: form.segnalatore_id || null,
+      segnalatore_telefono: form.segnalatore_telefono || null,
+      segnalatore_email: form.segnalatore_email || null,
+      data_scadenza: form.data_scadenza || null,
+      assegnato_da: profilo.id,
+    }
+    const { error } = await supabase.from('incarichi').insert(payload)
+    setSaving(false)
+    if (error) { showToast('Errore salvataggio: ' + error.message, 'error'); return }
+    showToast('Incarico creato ✓', 'success')
+    setShowModal(false)
+    setForm({ edificio_id: '', fornitore_id: '', descrizione: '', origine: 'diretto', stato: 'in_attesa', data_scadenza: '', segnalatore_id: '', segnalatore_telefono: '', segnalatore_email: '' })
+    setCondominiFiltered([])
+    loadAll()
+  }
+
+  const filtrati = incarichi.filter(i => {
+    if (filtroStato && i.stato !== filtroStato) return false
+    if (filtroEdificio && i.edificio_id !== filtroEdificio) return false
+    return true
+  })
 
   return (
     <div>
       <div className="topbar">
         <div>
-          <div className="page-title">Integrazioni</div>
-          <div className="page-subtitle">Connessione con Danea Domustudio</div>
+          <div className="page-title">Incarichi</div>
+          <div className="page-subtitle">{filtrati.length} incarichi{filtroStato || filtroEdificio ? ' (filtrati)' : ''}</div>
         </div>
+        <button className="btn btn-gold" onClick={() => setShowModal(true)}>+ Nuovo incarico</button>
       </div>
 
-      {/* TEST CONNESSIONE */}
-      <div className="form-card" style={{ marginBottom: 20 }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>🔗 Danea Domustudio API</div>
-        <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
-          La connessione avviene tramite Supabase Edge Function — la APIKey è conservata sul server e non è mai esposta nel browser.
-        </div>
-        <div className="form-group" style={{ marginBottom: 14 }}>
-          <label className="form-label">Endpoint da testare</label>
-          <select className="form-select" value={selectedEndpoint} onChange={e => setSelectedEndpoint(e.target.value)}>
-            {ENDPOINTS.map(ep => (
-              <option key={ep.value} value={ep.value}>{ep.label} — {ep.value}</option>
-            ))}
-          </select>
-        </div>
-        <button className="btn btn-outline" onClick={testConnessione} disabled={loading}>
-          {loading ? '⏳ Chiamata in corso...' : '🔍 Testa connessione Danea'}
-        </button>
-      </div>
-
-      {/* SYNC PERSONE */}
-      <div className="form-card" style={{ marginBottom: 20 }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>👤 Sincronizza Persone</div>
-        <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
-          Importa persone da Danea con stato Attivo/Ex già impostato automaticamente.
-        </div>
-        <button className="btn btn-gold" onClick={sincronizzaPersone} disabled={syncingPersone}>
-          {syncingPersone ? '⏳ Sincronizzazione in corso...' : '👤 Sincronizza persone da Danea'}
-        </button>
-        {syncResultPersone && (
-          <div style={{ marginTop: 16, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '14px 16px' }}>
-            <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>✅ Sincronizzazione completata</div>
-            <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 2 }}>
-              <div>🟢 Attivi da Danea: <strong>{syncResultPersone.attivi}</strong></div>
-              <div>⚫ Ex da Danea: <strong>{syncResultPersone.ex}</strong></div>
-              <div>📥 Totale: <strong>{syncResultPersone.totale}</strong></div>
-              <div>✨ Inseriti: <strong>{syncResultPersone.inseriti}</strong></div>
-            </div>
-          </div>
+      {/* FILTRI */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+        <select className="form-select" style={{ width: 160 }} value={filtroStato} onChange={e => setFiltroStato(e.target.value)}>
+          <option value="">Tutti gli stati</option>
+          <option value="in_attesa">In attesa</option>
+          <option value="in_corso">In corso</option>
+          <option value="bloccato">Bloccato</option>
+          <option value="completato">Completato</option>
+        </select>
+        <select className="form-select" style={{ width: 200 }} value={filtroEdificio} onChange={e => setFiltroEdificio(e.target.value)}>
+          <option value="">Tutti i condomini</option>
+          {edifici.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+        </select>
+        {(filtroStato || filtroEdificio) && (
+          <button className="btn btn-outline btn-sm" onClick={() => { setFiltroStato(''); setFiltroEdificio('') }}>✕ Reset</button>
         )}
       </div>
 
-      {/* SYNC CONDOMINI */}
-      <div className="form-card" style={{ marginBottom: 20 }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>🔄 Sincronizza Condomini</div>
-        <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 18 }}>
-          Importa o aggiorna i condomini da Danea. Le voci con "NON REGISTRARE" o "SOLO LAVORI" vengono escluse automaticamente.
-        </div>
-        <button className="btn btn-gold" onClick={sincronizzaCondomini} disabled={syncingCondomini}>
-          {syncingCondomini ? '⏳ Sincronizzazione in corso...' : '🔄 Sincronizza condomini da Danea'}
-        </button>
-        {syncResultCondomini && (
-          <div style={{ marginTop: 16, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8, padding: '14px 16px' }}>
-            <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13 }}>✅ Sincronizzazione completata</div>
-            <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 2 }}>
-              <div>📥 Totale da Danea: <strong>{syncResultCondomini.totale}</strong></div>
-              <div>⏭ Saltati (esclusi): <strong>{syncResultCondomini.saltati}</strong></div>
-              <div>✨ Nuovi inseriti: <strong>{syncResultCondomini.inseriti}</strong></div>
-              <div>🔁 Aggiornati: <strong>{syncResultCondomini.aggiornati}</strong></div>
-            </div>
+      <div className="table-wrap">
+        {filtrati.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">📋</div>
+            <div className="empty-text">Nessun incarico trovato</div>
           </div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Condominio</th>
+                <th>Descrizione</th>
+                <th>Fornitore</th>
+                <th>Origine</th>
+                <th>Stato</th>
+                <th>Scadenza</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtrati.map(i => (
+                <tr key={i.id} onClick={() => navigate('dettaglio', i.id)}>
+                  <td>{i.edifici?.nome || <span style={{ color: 'var(--fog)' }}>—</span>}</td>
+                  <td>{i.descrizione.length > 55 ? i.descrizione.slice(0, 55) + '...' : i.descrizione}</td>
+                  <td>{i.fornitori?.ragione_sociale || <span style={{ color: 'var(--fog)' }}>Da assegnare</span>}</td>
+                  <td><span className={`badge badge-${i.origine}`}>{ORIGINE_LABEL[i.origine]}</span></td>
+                  <td><span className={`badge badge-${i.stato}`}>{STATO_LABEL[i.stato]}</span></td>
+                  <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}>
+                    {i.data_scadenza ? new Date(i.data_scadenza).toLocaleDateString('it-IT') : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 
-      {/* RISULTATO TEST */}
-      {result && (
-        <div className="form-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>Risposta Danea</div>
-            <span className={`badge ${result.status === 200 ? 'badge-completato' : 'badge-bloccato'}`}>
-              HTTP {result.status}
-            </span>
-          </div>
-          <pre style={{
-            background: 'var(--paper)', border: '1px solid var(--line)',
-            borderRadius: 6, padding: '14px 16px',
-            fontSize: 11, fontFamily: 'DM Mono, monospace',
-            overflowX: 'auto', maxHeight: 300, overflowY: 'auto',
-            color: 'var(--ink2)', lineHeight: 1.6, whiteSpace: 'pre-wrap'
-          }}>
-            {JSON.stringify(result.data?.slice ? result.data.slice(0, 3) : result.data, null, 2)}
-            {result.data?.length > 3 ? `\n\n... e altri ${result.data.length - 3} record` : ''}
-          </pre>
-        </div>
-      )}
+      {/* MODAL NUOVO INCARICO */}
+      {showModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
+          <div className="modal" style={{ width: 'min(580px, 94vw)', boxSizing: 'border-box', overflow: 'hidden' }}>
+            <div className="modal-header">
+              <div className="modal-title">Nuovo incarico</div>
+              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="form-group">
+                <label className="form-label">Descrizione *</label>
+                <textarea className="form-textarea" placeholder="Descrivi il lavoro da eseguire..." value={form.descrizione} onChange={e => setField('descrizione', e.target.value)} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 12 }}>
+                <div className="form-group">
+                  <label className="form-label">Condominio</label>
+                  <select className="form-select" style={{ width: '100%', maxWidth: '100%' }} value={form.edificio_id} onChange={e => setField('edificio_id', e.target.value)}>
+                    <option value="">Seleziona condominio</option>
+                    {edifici.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Fornitore</label>
+                  <select className="form-select" style={{ width: '100%', maxWidth: '100%' }} value={form.fornitore_id} onChange={e => setField('fornitore_id', e.target.value)}>
+                    <option value="">Da assegnare</option>
+                    {fornitori.map(f => <option key={f.id} value={f.id}>{f.ragione_sociale}</option>)}
+                  </select>
+                </div>
+              </div>
 
-      {error && (
-        <div style={{ background: '#fee2e2', color: '#991b1b', padding: '14px 16px', borderRadius: 8, fontSize: 13 }}>
-          <strong>Errore:</strong> {error}
+              {/* SEGNALATORE — visibile solo se condominio selezionato */}
+              {form.edificio_id && (
+                <div className="form-group">
+                  <label className="form-label">Segnalatore</label>
+                  <select className="form-select" value={form.segnalatore_id} onChange={e => setField('segnalatore_id', e.target.value)}>
+                    <option value="">Nessun segnalatore</option>
+                    {condominiFiltered.map(c => <option key={c.id} value={c.id}>{c.nome_completo}</option>)}
+                  </select>
+                </div>
+              )}
+              {form.segnalatore_id && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="form-group">
+                    <label className="form-label">Telefono segnalatore</label>
+                    <input className="form-input" value={form.segnalatore_telefono} onChange={e => setField('segnalatore_telefono', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Email segnalatore</label>
+                    <input className="form-input" type="email" value={form.segnalatore_email} onChange={e => setField('segnalatore_email', e.target.value)} />
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div className="form-group">
+                  <label className="form-label">Origine</label>
+                  <select className="form-select" value={form.origine} onChange={e => setField('origine', e.target.value)}>
+                    <option value="diretto">Diretto</option>
+                    <option value="verbale">Verbale assemblea</option>
+                    <option value="segnalazione">Segnalazione</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Stato</label>
+                  <select className="form-select" value={form.stato} onChange={e => setField('stato', e.target.value)}>
+                    <option value="in_attesa">In attesa</option>
+                    <option value="in_corso">In corso</option>
+                    <option value="bloccato">Bloccato</option>
+                    <option value="completato">Completato</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Scadenza</label>
+                  <input type="date" className="form-input" value={form.data_scadenza} onChange={e => setField('data_scadenza', e.target.value)} />
+                </div>
+              </div>
+            </div>
+            <div className="form-actions">
+              <button className="btn btn-outline" onClick={() => setShowModal(false)}>Annulla</button>
+              <button className="btn btn-gold" onClick={salva} disabled={saving}>{saving ? 'Salvataggio...' : 'Crea incarico'}</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
