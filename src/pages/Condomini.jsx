@@ -7,6 +7,7 @@ const IMPORT_FIELDS = [
   { key: 'nome_completo', label: 'Denominazione', required: true },
   { key: 'condominio_nome', label: 'Condominio', required: false },
   { key: 'unita_immobiliare', label: 'Unità immobiliare', required: false },
+  { key: 'tipologia', label: 'Tipologia', required: false },
   { key: 'telefono', label: 'Tel 1', required: false },
   { key: 'telefono2', label: 'Tel 2', required: false },
   { key: 'telefono3', label: 'Tel 3', required: false },
@@ -24,6 +25,7 @@ const IMPORT_COLUMN_MAP = {
   'unità': 'unita_immobiliare',
   'unita immobiliare': 'unita_immobiliare',
   'interno': 'unita_immobiliare',
+  'tipologia': 'tipologia',
   'tel1': 'telefono',
   'tel 1': 'telefono',
   'telefono': 'telefono',
@@ -39,10 +41,11 @@ const IMPORT_COLUMN_MAP = {
   'note': 'note',
 }
 
-// Regex per rilevare email nelle Note
 const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g
+const TEMPLATE_ROWS = 'Mario Rossi;;Scala A Int. 5;proprietario;3331234567;;;mario.rossi@email.it;;'
 
-const TEMPLATE_ROWS = 'Mario Rossi;;Scala A Int. 5;3331234567;3449876543;;mario.rossi@email.it;;'
+const STATO_LABEL = { attivo: 'Attivo', ex: 'Ex' }
+const TIPOLOGIA_LABEL = { proprietario: 'Proprietario', conduttore: 'Conduttore', usufruttuario: 'Usufruttuario' }
 
 export default function Condomini() {
   const { isAdmin, showToast } = useApp()
@@ -54,9 +57,13 @@ export default function Condomini() {
   const [saving, setSaving] = useState(false)
   const [cerca, setCerca] = useState('')
   const [filtroEdificio, setFiltroEdificio] = useState('')
-  const [form, setForm] = useState({ nome_completo: '', condominio_id: '', unita_immobiliare: '', telefono: '', telefono2: '', telefono3: '', email: '', email2: '', note: '' })
-
+  const [filtroStato, setFiltroStato] = useState('attivo')
   const [totalCount, setTotalCount] = useState(0)
+  const [form, setForm] = useState({
+    nome_completo: '', condominio_id: '', unita_immobiliare: '', tipologia: '',
+    telefono: '', telefono2: '', telefono3: '',
+    email: '', email2: '', note: '', stato: 'attivo'
+  })
 
   useEffect(() => { loadAll() }, [])
 
@@ -72,13 +79,19 @@ export default function Condomini() {
 
   function apriNuovo() {
     setEditing(null)
-    setForm({ nome_completo: '', condominio_id: '', unita_immobiliare: '', telefono: '', telefono2: '', telefono3: '', email: '', email2: '', note: '' })
+    setForm({ nome_completo: '', condominio_id: '', unita_immobiliare: '', tipologia: '', telefono: '', telefono2: '', telefono3: '', email: '', email2: '', note: '', stato: 'attivo' })
     setShowModal(true)
   }
 
   function apriEdit(c) {
     setEditing(c.id)
-    setForm({ nome_completo: c.nome_completo, condominio_id: c.condominio_id || '', unita_immobiliare: c.unita_immobiliare || '', telefono: c.telefono || '', telefono2: c.telefono2 || '', telefono3: c.telefono3 || '', email: c.email || '', email2: c.email2 || '', note: c.note || '' })
+    setForm({
+      nome_completo: c.nome_completo, condominio_id: c.condominio_id || '',
+      unita_immobiliare: c.unita_immobiliare || '', tipologia: c.tipologia || '',
+      telefono: c.telefono || '', telefono2: c.telefono2 || '', telefono3: c.telefono3 || '',
+      email: c.email || '', email2: c.email2 || '', note: c.note || '',
+      stato: c.stato || 'attivo'
+    })
     setShowModal(true)
   }
 
@@ -87,7 +100,7 @@ export default function Condomini() {
   async function salva() {
     if (!form.nome_completo.trim()) { showToast('Il nome è obbligatorio', 'error'); return }
     setSaving(true)
-    const payload = { ...form, condominio_id: form.condominio_id || null }
+    const payload = { ...form, condominio_id: form.condominio_id || null, tipologia: form.tipologia || null }
     const { error } = editing
       ? await supabase.from('condòmini').update(payload).eq('id', editing)
       : await supabase.from('condòmini').insert(payload)
@@ -98,8 +111,16 @@ export default function Condomini() {
     loadAll()
   }
 
+  async function toggleStato(c) {
+    const nuovoStato = (c.stato || 'attivo') === 'attivo' ? 'ex' : 'attivo'
+    const { error } = await supabase.from('condòmini').update({ stato: nuovoStato }).eq('id', c.id)
+    if (error) { showToast('Errore: ' + error.message, 'error'); return }
+    showToast(`Persona segnata come ${nuovoStato === 'ex' ? 'Ex' : 'Attiva'} ✓`, 'success')
+    loadAll()
+  }
+
   async function elimina(id) {
-    if (!confirm('Eliminare questo condòmino?')) return
+    if (!confirm('Eliminare questa persona?')) return
     const { error } = await supabase.from('condòmini').delete().eq('id', id)
     if (error) { showToast('Errore eliminazione', 'error'); return }
     showToast('Persona eliminata', 'info')
@@ -109,20 +130,13 @@ export default function Condomini() {
   async function handleImport(rows, setCount) {
     const edMap = {}
     edifici.forEach(e => { edMap[e.nome.toLowerCase().trim()] = e.id })
-
-    // Campi validi nella tabella condòmini
-    const VALID_FIELDS = ['nome_completo', 'condominio_id', 'unita_immobiliare', 'telefono', 'telefono2', 'telefono3', 'email', 'email2', 'note']
-
+    const VALID_FIELDS = ['nome_completo', 'condominio_id', 'unita_immobiliare', 'tipologia', 'telefono', 'telefono2', 'telefono3', 'email', 'email2', 'note']
     const cleaned = rows.map(r => {
       const row = { ...r }
-
-      // Risolvi condominio_nome → condominio_id
       if (row.condominio_nome) {
         row.condominio_id = edMap[row.condominio_nome.toLowerCase().trim()] || null
+        delete row.condominio_nome
       }
-      delete row.condominio_nome
-
-      // Estrai email dalle Note se presenti
       if (row.note) {
         const found = row.note.match(EMAIL_REGEX) || []
         if (found.length > 0) {
@@ -131,17 +145,13 @@ export default function Condomini() {
           row.note = row.note.replace(EMAIL_REGEX, '').replace(/[,;]\s*$/, '').trim() || null
         }
       }
-
-      // Tieni solo i campi validi e pulisci i vuoti
       const clean = {}
       VALID_FIELDS.forEach(k => {
         const v = row[k]
         clean[k] = (v === '' || v === undefined) ? null : v
       })
-
       return clean
     })
-
     let count = 0
     const chunks = []
     for (let i = 0; i < cleaned.length; i += 50) chunks.push(cleaned.slice(i, i + 50))
@@ -155,7 +165,11 @@ export default function Condomini() {
     loadAll()
   }
 
+  const nAttivi = condomini.filter(c => (c.stato || 'attivo') === 'attivo').length
+  const nEx = condomini.filter(c => c.stato === 'ex').length
+
   const filtrati = condomini.filter(c => {
+    if (filtroStato !== 'tutti' && (c.stato || 'attivo') !== filtroStato) return false
     if (filtroEdificio && c.condominio_id !== filtroEdificio) return false
     if (cerca && !c.nome_completo.toLowerCase().includes(cerca.toLowerCase())) return false
     return true
@@ -166,12 +180,20 @@ export default function Condomini() {
       <div className="topbar">
         <div>
           <div className="page-title">Persone</div>
-          <div className="page-subtitle">{totalCount} persone in anagrafica{filtrati.length < totalCount ? ` · ${filtrati.length} visualizzate` : ''}</div>
+          <div className="page-subtitle">{nAttivi} attivi · {nEx} ex · {totalCount} totali</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-outline" onClick={() => setShowImport(true)}>📥 Importa</button>
           <button className="btn btn-gold" onClick={apriNuovo}>+ Aggiungi persona</button>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        {[['attivo', '🟢 Attivi'], ['ex', '⚫ Ex'], ['tutti', '📋 Tutti']].map(([val, label]) => (
+          <button key={val} className={`btn btn-sm ${filtroStato === val ? 'btn-gold' : 'btn-outline'}`} onClick={() => setFiltroStato(val)}>
+            {label}
+          </button>
+        ))}
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -197,18 +219,23 @@ export default function Condomini() {
               <tr>
                 <th>Nome</th>
                 <th>Condominio</th>
-                <th>Unità</th>
+                <th>Tipologia</th>
                 <th>Telefono</th>
                 <th>Email</th>
+                <th>Stato</th>
                 <th>Azioni</th>
               </tr>
             </thead>
             <tbody>
               {filtrati.map(c => (
-                <tr key={c.id}>
+                <tr key={c.id} style={{ opacity: c.stato === 'ex' ? 0.6 : 1 }}>
                   <td style={{ fontWeight: 500 }}>{c.nome_completo}</td>
-                  <td>{c.edifici?.nome || <span style={{ color: 'var(--fog)' }}>—</span>}</td>
-                  <td style={{ fontSize: 12, color: 'var(--slate)' }}>{c.unita_immobiliare || <span style={{ color: 'var(--fog)' }}>—</span>}</td>
+                  <td style={{ fontSize: 12 }}>{c.edifici?.nome || <span style={{ color: 'var(--fog)' }}>—</span>}</td>
+                  <td>
+                    {c.tipologia
+                      ? <span className="badge badge-verbale">{TIPOLOGIA_LABEL[c.tipologia] || c.tipologia}</span>
+                      : <span style={{ color: 'var(--fog)' }}>—</span>}
+                  </td>
                   <td style={{ fontFamily: 'DM Mono, monospace', fontSize: 12 }}>
                     {[c.telefono, c.telefono2, c.telefono3].filter(Boolean).join(', ') || <span style={{ color: 'var(--fog)' }}>—</span>}
                   </td>
@@ -216,8 +243,16 @@ export default function Condomini() {
                     {[c.email, c.email2].filter(Boolean).join(', ') || <span style={{ color: 'var(--fog)' }}>—</span>}
                   </td>
                   <td>
+                    <span className={`badge ${c.stato === 'ex' ? 'badge-bloccato' : 'badge-completato'}`}>
+                      {STATO_LABEL[c.stato || 'attivo']}
+                    </span>
+                  </td>
+                  <td>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-outline btn-sm" onClick={() => apriEdit(c)}>✏️</button>
+                      <button className="btn btn-outline btn-sm" title={(c.stato || 'attivo') === 'ex' ? 'Riattiva' : 'Segna come Ex'} onClick={() => toggleStato(c)}>
+                        {c.stato === 'ex' ? '🟢' : '⚫'}
+                      </button>
                       {isAdmin() && <button className="btn btn-danger btn-sm" onClick={() => elimina(c.id)}>🗑</button>}
                     </div>
                   </td>
@@ -250,6 +285,22 @@ export default function Condomini() {
               <div className="form-group">
                 <label className="form-label">Unità immobiliare</label>
                 <input className="form-input" placeholder="es. Scala A Int. 5" value={form.unita_immobiliare} onChange={e => setField('unita_immobiliare', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Tipologia</label>
+                <select className="form-select" value={form.tipologia} onChange={e => setField('tipologia', e.target.value)}>
+                  <option value="">Non specificata</option>
+                  <option value="proprietario">Proprietario</option>
+                  <option value="conduttore">Conduttore</option>
+                  <option value="usufruttuario">Usufruttuario</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Stato</label>
+                <select className="form-select" value={form.stato} onChange={e => setField('stato', e.target.value)}>
+                  <option value="attivo">Attivo</option>
+                  <option value="ex">Ex</option>
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Tel 1</label>
@@ -291,7 +342,7 @@ export default function Condomini() {
           columnMap={IMPORT_COLUMN_MAP}
           onConfirm={handleImport}
           onClose={() => setShowImport(false)}
-          templateName="template_condomini.csv"
+          templateName="template_persone.csv"
           templateRows={TEMPLATE_ROWS}
         />
       )}
