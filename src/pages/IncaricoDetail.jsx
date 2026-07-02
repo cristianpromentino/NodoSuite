@@ -24,7 +24,7 @@ export default function IncaricoDetail() {
     const [{ data: inc }, { data: lg }, { data: ed }, { data: fo }] = await Promise.all([
       supabase.from('incarichi').select('*, edifici(id,nome), fornitori(id,ragione_sociale,telefono_whatsapp), profili(nome_completo), condòmini(id,nome_completo,telefono,email)').eq('id', selectedId).single(),
       supabase.from('incarichi_log').select('*, profili(nome_completo)').eq('incarico_id', selectedId).order('created_at', { ascending: false }),
-      supabase.from('edifici').select('id, nome').order('nome'),
+      supabase.from('edifici').select('id, nome').eq('stato', 'attivo').order('nome'),
       supabase.from('fornitori').select('id, ragione_sociale, telefono_whatsapp').order('ragione_sociale'),
     ])
     setIncarico(inc)
