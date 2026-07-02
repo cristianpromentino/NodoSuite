@@ -83,6 +83,7 @@ export default function Integrazioni() {
     setSyncProgress(null)
     setError(null)
     try {
+      // Tutti i condomini con danea_id — inclusi i cessati
       const { data: edificiDb } = await supabase
         .from('edifici').select('id, danea_id').not('danea_id', 'is', null)
 
@@ -106,7 +107,7 @@ export default function Integrazioni() {
 
         const results = await Promise.all(
           batch.map(edificio =>
-            callDanea('/api/external/persona', { CondGendID: edificio.danea_id })
+            callDanea('/api/external/persona', { CondGendID: edificio.danea_id, FiltroSubentri: 1 })
               .then(data => ({ edificio, data, ok: true }))
               .catch(err => ({ edificio, data: null, ok: false, err: err.message }))
           )
