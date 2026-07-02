@@ -40,7 +40,7 @@ const IMPORT_COLUMN_MAP = {
 }
 
 // Regex per rilevare email nelle Note
-const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g
+const EMAIL_REGEX = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/
 
 const TEMPLATE_ROWS = 'Mario Rossi;;Scala A Int. 5;3331234567;3449876543;;mario.rossi@email.it;;'
 
@@ -121,11 +121,11 @@ export default function Condomini() {
 
       // Estrai email dalle Note se presenti
       if (row.note) {
-        const found = row.note.match(EMAIL_REGEX) || []
+        const found = row.note..match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g) || []
         if (found.length > 0) {
           if (!row.email) row.email = found[0]
           else if (!row.email2) row.email2 = found[0]
-          row.note = row.note.replace(EMAIL_REGEX, '').replace(/[,;]\s*$/, '').trim() || null
+          row.note = row.note..replace(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g, '').replace(/[,;]\s*$/, '').trim() || null
         }
       }
 
