@@ -107,27 +107,17 @@ export default function Integrazioni() {
 
         const results = await Promise.all(
           batch.map(edificio =>
-            callDanea('/api/external/persona', { CondGendID: edificio.danea_id, FiltroSubentri: 1 })
-              .then(data => ({ edificio, data, ok: true }))
-              .catch(err => ({ edificio, data: null, ok: false, err: err.message }))
+            fetchTutteLePersone(edificio)
+              .then(persone => ({ edificio, persone, ok: true }))
+              .catch(err => ({ edificio, persone: [], ok: false, err: err.message }))
           )
         )
 
-        for (const { edificio, data, ok } of results) {
-          if (!ok || !data || data.status !== 200) {
-            condominiErrore++
-            continue
-          }
-          if (!Array.isArray(data.data) || data.data.length === 0) {
-            condominiVuoti++
-            continue
-          }
+        for (const { edificio, persone, ok } of results) {
+          if (!ok) { condominiErrore++; continue }
+          if (persone.length === 0) { condominiVuoti++; continue }
 
           condominiOk++
-          const persone = data.data
-            .map(p => mapPersona(p, 'attivo', edificio.id))
-            .filter(p => p.nome_completo)
-
           totalePersone += persone.length
 
           const chunks = []
@@ -156,6 +146,26 @@ export default function Integrazioni() {
     }
     setSyncingPersone(false)
     setSyncProgress(null)
+  }
+
+  async function fetchTutteLePersone(edificio) {
+    const PAGE_SIZE = 500
+    let pageNumber = 1
+    let tutte = []
+    while (true) {
+      const data = await callDanea('/api/external/persona', {
+        CondGendID: edificio.danea_id,
+        FiltroSubentri: 1,
+        PageSize: PAGE_SIZE,
+        PageNumber: pageNumber
+      })
+      if (!data || data.status !== 200 || !Array.isArray(data.data) || data.data.length === 0) break
+      const persone = data.data.map(p => mapPersona(p, 'attivo', edificio.id)).filter(p => p.nome_completo)
+      tutte = [...tutte, ...persone]
+      if (data.data.length < PAGE_SIZE) break
+      pageNumber++
+    }
+    return tutte
   }
 
   async function sincronizzaCondomini() {
