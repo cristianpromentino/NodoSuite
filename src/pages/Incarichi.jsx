@@ -26,7 +26,7 @@ export default function Incarichi() {
   async function loadAll() {
     const [{ data: inc }, { data: ed }, { data: fo }, { data: persone }] = await Promise.all([
       supabase.from('incarichi').select('*, edifici(nome), fornitori(ragione_sociale)').order('created_at', { ascending: false }),
-      supabase.from('edifici').select('id, nome').order('nome'),
+      supabase.from('edifici').select('id, nome').eq('stato', 'attivo').order('nome'),
       supabase.from('fornitori').select('id, ragione_sociale').order('ragione_sociale'),
       supabase.from('condòmini').select('id, nome_completo, telefono, telefono2, email, email2, condominio_id').order('nome_completo'),
     ])
