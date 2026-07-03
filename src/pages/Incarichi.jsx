@@ -24,27 +24,26 @@ export default function Incarichi() {
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
-    const [{ data: inc }, { data: ed }, { data: fo }, { data: persone }] = await Promise.all([
+    const [{ data: inc }, { data: ed }, { data: fo }] = await Promise.all([
       supabase.from('incarichi').select('*, edifici(nome), fornitori(ragione_sociale)').order('created_at', { ascending: false }),
       supabase.from('edifici').select('id, nome').eq('stato', 'attivo').order('nome'),
       supabase.from('fornitori').select('id, ragione_sociale').order('ragione_sociale'),
-      supabase.from('condòmini').select('id, nome_completo, telefono, telefono2, email, email2, condominio_id').order('nome_completo'),
     ])
     setIncarichi(inc || [])
     setEdifici(ed || [])
     setFornitori(fo || [])
-    setCondominiFiltered(persone || [])
+    setCondominiFiltered([])
   }
 
   async function loadCondomini(edificio_id) {
-    // Temporaneo: mostra tutte le persone, con quelle del condominio selezionato in cima
-    // Sarà filtrato per condominio dopo integrazione Danea
-    if (!edificio_id) return
-    setCondominiFiltered(prev => {
-      const linked = prev.filter(p => p.condominio_id === edificio_id)
-      const others = prev.filter(p => p.condominio_id !== edificio_id)
-      return [...linked, ...others]
-    })
+    if (!edificio_id) { setCondominiFiltered([]); return }
+    const { data } = await supabase
+      .from('condòmini')
+      .select('id, nome_completo, telefono, telefono2, email, email2')
+      .eq('condominio_id', edificio_id)
+      .eq('stato', 'attivo')
+      .order('nome_completo')
+    setCondominiFiltered(data || [])
   }
 
   function setField(k, v) {
@@ -198,7 +197,10 @@ export default function Incarichi() {
                   <label className="form-label">Segnalatore</label>
                   <select className="form-select" value={form.segnalatore_id} onChange={e => setField('segnalatore_id', e.target.value)}>
                     <option value="">Nessun segnalatore</option>
-                    {condominiFiltered.map(c => <option key={c.id} value={c.id}>{c.nome_completo}</option>)}
+                    {condominiFiltered.length === 0
+                      ? <option disabled>Nessuna persona trovata per questo condominio</option>
+                      : condominiFiltered.map(c => <option key={c.id} value={c.id}>{c.nome_completo}</option>)
+                    }
                   </select>
                 </div>
               )}
