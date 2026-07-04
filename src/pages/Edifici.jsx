@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import ImportModal from '../components/ImportModal'
 import Icon from '../components/Icon'
-import { NAV_ICONS } from '../components/icons-map'
+import { NAV_ICONS, ACTION_ICONS } from '../components/icons-map'
 
 const IMPORT_FIELDS = [
   { key: 'nome', label: 'Nome', required: true },
@@ -167,7 +167,7 @@ export default function Edifici() {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-outline btn-sm" onClick={() => apriEdit(e)}>✏️</button>
+                      <button className="btn btn-outline btn-sm" onClick={() => apriEdit(e)}><Icon icon={ACTION_ICONS.modifica} size="sm" /></button>
                       <button
                         className="btn btn-outline btn-sm"
                         title={e.stato === 'cessato' ? 'Riattiva' : 'Segna come cessato'}
@@ -175,7 +175,7 @@ export default function Edifici() {
                       >
                         {e.stato === 'cessato' ? '🟢' : '⚫'}
                       </button>
-                      {isAdmin() && <button className="btn btn-danger btn-sm" onClick={() => elimina(e.id)}>🗑</button>}
+                      {isAdmin() && <button className="btn btn-danger btn-sm" onClick={() => elimina(e.id)}><Icon icon={ACTION_ICONS.elimina} size="sm" /></button>}
                     </div>
                   </td>
                 </tr>
@@ -190,7 +190,7 @@ export default function Edifici() {
           <div className="modal">
             <div className="modal-header">
               <div className="modal-title">{editing ? 'Modifica condominio' : 'Nuovo condominio'}</div>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowModal(false)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div className="form-group">

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import Icon from '../components/Icon'
-import { NAV_ICONS } from '../components/icons-map'
+import { NAV_ICONS, ACTION_ICONS } from '../components/icons-map'
 
 const STATO_LABEL = { in_attesa: 'In attesa', in_corso: 'In corso', completato: 'Completato', bloccato: 'Bloccato' }
 const ORIGINE_LABEL = { verbale: 'Verbale', diretto: 'Diretto', segnalazione: 'Segnalazione' }
@@ -123,7 +123,7 @@ export default function Incarichi() {
           {edifici.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
         </select>
         {(filtroStato || filtroEdificio) && (
-          <button className="btn btn-outline btn-sm" onClick={() => { setFiltroStato(''); setFiltroEdificio('') }}>✕ Reset</button>
+          <button className="btn btn-outline btn-sm" onClick={() => { setFiltroStato(''); setFiltroEdificio('') }}><Icon icon={ACTION_ICONS.chiudi} size="sm" /> Reset</button>
         )}
       </div>
 
@@ -169,7 +169,7 @@ export default function Incarichi() {
           <div className="modal" style={{ width: 'min(580px, 94vw)', boxSizing: 'border-box', overflow: 'hidden' }}>
             <div className="modal-header">
               <div className="modal-title">Nuovo incarico</div>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowModal(false)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div className="form-group">

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
+import Icon from '../components/Icon'
+import { ACTION_ICONS } from '../components/icons-map'
 
 const STATO_LABEL = { in_attesa: 'In attesa', in_corso: 'In corso', completato: 'Completato', bloccato: 'Bloccato' }
 const ORIGINE_LABEL = { verbale: 'Verbale assemblea', diretto: 'Diretto', segnalazione: 'Segnalazione' }
@@ -102,8 +104,8 @@ export default function IncaricoDetail() {
             <button className="btn btn-whatsapp" onClick={() => setShowWa(true)}>📱 WhatsApp</button>
           )}
           <button className="btn btn-outline" onClick={() => showToast('Funzionalità email in arrivo', 'info')} title="Invio email — funzionalità in configurazione">✉️ Email</button>
-          {!editando && <button className="btn btn-outline" onClick={() => setEditando(true)}>✏️ Modifica</button>}
-          {isAdmin() && <button className="btn btn-danger" onClick={eliminaIncarico}>🗑 Elimina</button>}
+          {!editando && <button className="btn btn-outline" onClick={() => setEditando(true)}><Icon icon={ACTION_ICONS.modifica} size="sm" /> Modifica</button>}
+          {isAdmin() && <button className="btn btn-danger" onClick={eliminaIncarico}><Icon icon={ACTION_ICONS.elimina} size="sm" /> Elimina</button>}
         </div>
       </div>
 
@@ -246,7 +248,7 @@ export default function IncaricoDetail() {
           <div className="modal">
             <div className="modal-header">
               <div className="modal-title">📱 Messaggio WhatsApp</div>
-              <button className="modal-close" onClick={() => setShowWa(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowWa(false)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
             </div>
             <div className="form-group" style={{ marginBottom: 16 }}>
               <label className="form-label">Testo messaggio (modificabile)</label>

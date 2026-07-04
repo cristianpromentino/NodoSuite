@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import ImportModal from '../components/ImportModal'
 import Icon from '../components/Icon'
-import { NAV_ICONS } from '../components/icons-map'
+import { NAV_ICONS, ACTION_ICONS } from '../components/icons-map'
 
 const CATEGORIE = ['Idraulico', 'Elettricista', 'Ascensori', 'Muratore', 'Falegname', 'Giardiniere', 'Pulizie', 'Derattizzazione', 'Restauro', 'Serraturista', 'Termoidraulico', 'Altro']
 
@@ -142,8 +142,7 @@ export default function Fornitori() {
       <div className="table-wrap">
         {filtrati.length === 0 ? (
           <div className="empty-state">
-            {/* Nota: nessuna icona Solar "fornitori/azienda" confermata ancora — emoji lasciata invariata */}
-            <div className="empty-icon">🏢</div>
+            <div className="empty-icon"><Icon icon={NAV_ICONS.fornitori} size={36} /></div>
             <div className="empty-text">Nessun fornitore ancora. Aggiungine uno!</div>
           </div>
         ) : (
@@ -170,8 +169,8 @@ export default function Fornitori() {
                   <td style={{ fontSize: 12 }}>{f.email || <span style={{ color: 'var(--fog)' }}>—</span>}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-outline btn-sm" onClick={() => apriEdit(f)}>✏️</button>
-                      {isAdmin() && <button className="btn btn-danger btn-sm" onClick={() => elimina(f.id)}>🗑</button>}
+                      <button className="btn btn-outline btn-sm" onClick={() => apriEdit(f)}><Icon icon={ACTION_ICONS.modifica} size="sm" /></button>
+                      {isAdmin() && <button className="btn btn-danger btn-sm" onClick={() => elimina(f.id)}><Icon icon={ACTION_ICONS.elimina} size="sm" /></button>}
                     </div>
                   </td>
                 </tr>
@@ -186,7 +185,7 @@ export default function Fornitori() {
           <div className="modal" style={{ width: 'min(680px, 96vw)' }}>
             <div className="modal-header">
               <div className="modal-title">{editing ? 'Modifica fornitore' : 'Nuovo fornitore'}</div>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowModal(false)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
             </div>
             <div className="form-grid">
               <div className="form-group form-full">

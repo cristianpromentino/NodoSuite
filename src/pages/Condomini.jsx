@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import ImportModal from '../components/ImportModal'
 import Icon from '../components/Icon'
-import { NAV_ICONS } from '../components/icons-map'
+import { NAV_ICONS, ACTION_ICONS } from '../components/icons-map'
 
 const IMPORT_FIELDS = [
   { key: 'nome_completo', label: 'Denominazione', required: true },
@@ -229,7 +229,7 @@ export default function Condomini() {
           {edifici.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
         </select>
         {(cerca || filtroEdificio) && (
-          <button className="btn btn-outline btn-sm" onClick={() => { setCerca(''); setCercaInput(''); setFiltroEdificio('') }}>✕ Reset</button>
+          <button className="btn btn-outline btn-sm" onClick={() => { setCerca(''); setCercaInput(''); setFiltroEdificio('') }}><Icon icon={ACTION_ICONS.chiudi} size="sm" /> Reset</button>
         )}
       </div>
 
@@ -275,11 +275,11 @@ export default function Condomini() {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-outline btn-sm" onClick={() => apriEdit(c)}>✏️</button>
+                      <button className="btn btn-outline btn-sm" onClick={() => apriEdit(c)}><Icon icon={ACTION_ICONS.modifica} size="sm" /></button>
                       <button className="btn btn-outline btn-sm" title={(c.stato || 'attivo') === 'ex' ? 'Riattiva' : 'Segna come Ex'} onClick={() => toggleStato(c)}>
                         {c.stato === 'ex' ? '🟢' : '⚫'}
                       </button>
-                      {isAdmin() && <button className="btn btn-danger btn-sm" onClick={() => elimina(c.id)}>🗑</button>}
+                      {isAdmin() && <button className="btn btn-danger btn-sm" onClick={() => elimina(c.id)}><Icon icon={ACTION_ICONS.elimina} size="sm" /></button>}
                     </div>
                   </td>
                 </tr>
@@ -298,13 +298,13 @@ export default function Condomini() {
         </div>
         {totalePagine > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button className="btn btn-outline btn-sm" onClick={() => setPagina(0)} disabled={pagina === 0}>⏮</button>
-            <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p - 1)} disabled={pagina === 0}>← Prec</button>
+            <button className="btn btn-outline btn-sm" onClick={() => setPagina(0)} disabled={pagina === 0}><Icon icon={ACTION_ICONS.primaPagina} size="sm" /></button>
+            <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p - 1)} disabled={pagina === 0}><Icon icon={ACTION_ICONS.paginaPrec} size="sm" /> Prec</button>
             <span style={{ fontSize: 13, color: 'var(--slate)' }}>
               Pagina <strong>{pagina + 1}</strong> di <strong>{totalePagine}</strong>
             </span>
-            <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p + 1)} disabled={pagina >= totalePagine - 1}>Succ →</button>
-            <button className="btn btn-outline btn-sm" onClick={() => setPagina(totalePagine - 1)} disabled={pagina >= totalePagine - 1}>⏭</button>
+            <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p + 1)} disabled={pagina >= totalePagine - 1}>Succ <Icon icon={ACTION_ICONS.paginaSucc} size="sm" /></button>
+            <button className="btn btn-outline btn-sm" onClick={() => setPagina(totalePagine - 1)} disabled={pagina >= totalePagine - 1}><Icon icon={ACTION_ICONS.ultimaPagina} size="sm" /></button>
           </div>
         )}
       </div>
@@ -314,7 +314,7 @@ export default function Condomini() {
           <div className="modal">
             <div className="modal-header">
               <div className="modal-title">{editing ? 'Modifica persona' : 'Nuova persona'}</div>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowModal(false)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
             </div>
             <div className="form-grid">
               <div className="form-group form-full">
