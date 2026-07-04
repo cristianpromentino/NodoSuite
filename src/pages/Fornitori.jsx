@@ -146,7 +146,7 @@ export default function Fornitori() {
             <div className="empty-text">Nessun fornitore ancora. Aggiungine uno!</div>
           </div>
         ) : (
-          <table>
+          <table className="table-fornitori">
             <thead>
               <tr>
                 <th>Ragione sociale</th>

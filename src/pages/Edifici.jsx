@@ -146,7 +146,7 @@ export default function Edifici() {
             <div className="empty-text">Nessun condominio trovato</div>
           </div>
         ) : (
-          <table>
+          <table className="table-condomini">
             <thead>
               <tr>
                 <th>Nome</th>
@@ -205,7 +205,7 @@ export default function Edifici() {
                 <label className="form-label">Indirizzo completo</label>
                 <input className="form-input" placeholder="es. Via Caio Asinio Pollione 79" value={form.indirizzo} onChange={e => setField('indirizzo', e.target.value)} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: 10 }}>
+              <div className="form-grid-addr">
                 <div className="form-group">
                   <label className="form-label">CAP</label>
                   <input className="form-input" value={form.cap} onChange={e => setField('cap', e.target.value)} />

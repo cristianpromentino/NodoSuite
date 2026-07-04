@@ -240,7 +240,7 @@ export default function Condomini() {
             <div className="empty-text">Nessuna persona trovata</div>
           </div>
         ) : (
-          <table>
+          <table className="table-persone">
             <thead>
               <tr>
                 <th>Nome</th>

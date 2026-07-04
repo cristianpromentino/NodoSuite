@@ -160,7 +160,7 @@ export default function IncaricoDetail() {
             </div>
           </>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px' }}>
+          <div className="detail-grid">
             <div>
               <div className="form-label" style={{ marginBottom: 4 }}>Descrizione</div>
               <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.6 }}>{incarico.descrizione}</div>
@@ -216,7 +216,7 @@ export default function IncaricoDetail() {
       {/* LOG AGGIORNAMENTI */}
       <div className="form-card">
         <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>📝 Note e aggiornamenti</div>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+        <div className="note-add-row">
           <textarea
             className="form-textarea" style={{ flex: 1, minHeight: 60 }}
             placeholder="Aggiungi una nota di aggiornamento..."

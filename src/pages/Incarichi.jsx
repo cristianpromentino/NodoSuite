@@ -176,7 +176,7 @@ export default function Incarichi() {
                 <label className="form-label">Descrizione *</label>
                 <textarea className="form-textarea" placeholder="Descrivi il lavoro da eseguire..." value={form.descrizione} onChange={e => setField('descrizione', e.target.value)} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 12 }}>
+              <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">Condominio</label>
                   <select className="form-select" style={{ width: '100%', maxWidth: '100%' }} value={form.edificio_id} onChange={e => setField('edificio_id', e.target.value)}>
@@ -207,7 +207,7 @@ export default function Incarichi() {
                 </div>
               )}
               {form.segnalatore_id && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="form-grid">
                   <div className="form-group">
                     <label className="form-label">Telefono segnalatore</label>
                     <input className="form-input" value={form.segnalatore_telefono} onChange={e => setField('segnalatore_telefono', e.target.value)} />
@@ -219,7 +219,7 @@ export default function Incarichi() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div className="form-grid-3">
                 <div className="form-group">
                   <label className="form-label">Origine</label>
                   <select className="form-select" value={form.origine} onChange={e => setField('origine', e.target.value)}>
