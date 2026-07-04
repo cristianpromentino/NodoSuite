@@ -45,6 +45,7 @@ body {
   font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* LAYOUT */
@@ -308,6 +309,11 @@ tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); }
 }
 .bottom-nav-item.active { color: var(--primary); }
 
+/* GRIGLIE RESPONSIVE — sostituiscono gli style inline che le media query non possono sovrascrivere */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.form-grid-addr { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 10px; }
+.note-add-row { display: flex; gap: 10px; margin-bottom: 16px; }
+
 /* RESPONSIVE */
 @media (max-width: 768px) {
   .sidebar { display: none; }
@@ -323,4 +329,25 @@ tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); }
   }
   .form-grid, .form-grid-3 { grid-template-columns: 1fr; }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Tabelle liste: su mobile mostra solo Nome, Stato, Azioni */
+  .table-persone th:nth-child(2), .table-persone td:nth-child(2),
+  .table-persone th:nth-child(3), .table-persone td:nth-child(3),
+  .table-persone th:nth-child(4), .table-persone td:nth-child(4),
+  .table-persone th:nth-child(5), .table-persone td:nth-child(5) { display: none; }
+
+  .table-condomini th:nth-child(2), .table-condomini td:nth-child(2) { display: none; }
+
+  .table-fornitori th:nth-child(2), .table-fornitori td:nth-child(2),
+  .table-fornitori th:nth-child(3), .table-fornitori td:nth-child(3),
+  .table-fornitori th:nth-child(4), .table-fornitori td:nth-child(4) { display: none; }
+
+  /* Barre filtri/ricerca: gli input a larghezza fissa inline diventano fluidi su mobile */
+  .table-persone, .table-condomini, .table-fornitori { width: 100%; }
+
+  .topbar { flex-wrap: wrap; row-gap: 12px; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .form-grid-addr { grid-template-columns: 1fr; }
+  .note-add-row { flex-direction: column; }
+  .note-add-row button { align-self: stretch; justify-content: center; }
 }
