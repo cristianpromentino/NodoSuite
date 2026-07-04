@@ -299,11 +299,11 @@ export default function Condomini() {
         {totalePagine > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button className="btn btn-outline btn-sm" onClick={() => setPagina(0)} disabled={pagina === 0}><Icon icon={ACTION_ICONS.primaPagina} size="sm" /></button>
-            <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p - 1)} disabled={pagina === 0}><Icon icon={ACTION_ICONS.paginaPrec} size="sm" /> Prec</button>
+            <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p - 1)} disabled={pagina === 0}><Icon icon={ACTION_ICONS.paginaPrec} size="sm" /></button>
             <span style={{ fontSize: 13, color: 'var(--slate)' }}>
-              Pagina <strong>{pagina + 1}</strong> di <strong>{totalePagine}</strong>
+              <strong>{pagina + 1}</strong> di <strong>{totalePagine}</strong>
             </span>
-            <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p + 1)} disabled={pagina >= totalePagine - 1}>Succ <Icon icon={ACTION_ICONS.paginaSucc} size="sm" /></button>
+            <button className="btn btn-outline btn-sm" onClick={() => setPagina(p => p + 1)} disabled={pagina >= totalePagine - 1}><Icon icon={ACTION_ICONS.paginaSucc} size="sm" /></button>
             <button className="btn btn-outline btn-sm" onClick={() => setPagina(totalePagine - 1)} disabled={pagina >= totalePagine - 1}><Icon icon={ACTION_ICONS.ultimaPagina} size="sm" /></button>
           </div>
         )}
