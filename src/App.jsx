@@ -23,6 +23,15 @@ export default function App() {
   const [page, setPage] = useState('dashboard')
   const [selectedId, setSelectedId] = useState(null)
   const [toasts, setToasts] = useState([])
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('nodosuite:sidebarCollapsed') === '1')
+
+  function toggleSidebar() {
+    setSidebarCollapsed(c => {
+      const next = !c
+      localStorage.setItem('nodosuite:sidebarCollapsed', next ? '1' : '0')
+      return next
+    })
+  }
 
   // Alert incarichi scaduti — controllato una sola volta per sessione di login
   const [overdueCount, setOverdueCount] = useState(0)
@@ -97,8 +106,8 @@ export default function App() {
 
   return (
     <AppContext.Provider value={ctx}>
-      <div className="app-shell">
-        <Layout page={page} navigate={navigate} profilo={profilo} />
+      <div className={`app-shell ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <Layout page={page} navigate={navigate} profilo={profilo} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
         <main className="main-content">
           {page === 'dashboard'   && <Dashboard />}
           {page === 'incarichi'   && <Incarichi />}

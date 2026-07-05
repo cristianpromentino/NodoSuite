@@ -78,10 +78,21 @@ body {
 }
 .sidebar-logo span { color: var(--primary-light); }
 .sidebar-tag { font-size: 10px; color: rgba(255,255,255,.5); margin-top: 2px; letter-spacing: .04em; }
+.sidebar-toggle {
+  position: absolute; top: 20px; right: -12px; z-index: 11;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--white); border: 1px solid var(--line); box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--primary); font-size: 14px; line-height: 1;
+  padding: 0;
+}
 .sidebar.collapsed .sidebar-tag,
 .sidebar.collapsed .sidebar-user,
-.sidebar.collapsed .nav-item span:not(.nav-icon),
+.sidebar.collapsed .sidebar-logo,
+.sidebar.collapsed .nav-item span,
 .sidebar.collapsed .btn-logout span:last-child { display: none; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 10px 0; }
+.sidebar.collapsed .btn-logout { justify-content: center; padding: 8px 0; }
 
 .sidebar-user {
   padding: 12px 18px;
