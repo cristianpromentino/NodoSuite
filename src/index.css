@@ -247,13 +247,13 @@ tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); }
   position: fixed; inset: 0; z-index: 100;
   background: rgba(1,85,120,.35); backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center; padding: 20px;
-  overscroll-behavior: contain;
 }
 .modal {
   background: var(--white); border-radius: var(--radius-card);
   width: min(600px, 100%); max-height: 90vh; overflow-y: auto; overflow-x: hidden;
   box-shadow: var(--shadow-lg); padding: 28px;
-  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--ink); }
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
