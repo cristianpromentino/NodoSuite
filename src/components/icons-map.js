@@ -22,6 +22,8 @@ import {
   CallChatRounded,
   Letter,
   Phone,
+  DangerSquare,
+  CheckCircle,
 } from '@solar-icons/react-perf/LineDuotone';
 
 import {
@@ -73,4 +75,6 @@ export const UTILITY_ICONS = {
   whatsapp: CallChatRounded,
   email: Letter,
   telefono: Phone,
+  pericolo: DangerSquare,
+  approvato: CheckCircle,
 };
