@@ -26,7 +26,7 @@ const TABS = [
   { key: 'adempimenti', label: 'Adempimenti' },
 ]
 
-export default function VerbaleReport({ verbale }) {
+export default function VerbaleReport({ verbale, onEdificioChanged }) {
   const { showToast, navigate } = useApp()
   const [tab, setTab] = useState('anagrafica')
   const [partecipanti, setPartecipanti] = useState([])
@@ -35,12 +35,30 @@ export default function VerbaleReport({ verbale }) {
   const [loading, setLoading] = useState(true)
   const [showAddAdemp, setShowAddAdemp] = useState(false)
   const [pdfUrl, setPdfUrl] = useState(null)
+  const [edificiList, setEdificiList] = useState([])
+  const [savingEdificio, setSavingEdificio] = useState(false)
   const [form, setForm] = useState({ attivita: '', area: 'Amministrazione', urgenza: 'media', responsabile: '', scadenza: '' })
 
   useEffect(() => {
     setTab('anagrafica')
     load()
   }, [verbale.id])
+
+  useEffect(() => {
+    supabase.from('edifici').select('id, nome').eq('stato', 'attivo').order('nome')
+      .then(({ data }) => setEdificiList(data || []))
+  }, [])
+
+  async function cambiaEdificio(e) {
+    const nuovoId = e.target.value || null
+    setSavingEdificio(true)
+    const { error } = await supabase.from('verbali').update({ edificio_id: nuovoId }).eq('id', verbale.id)
+    setSavingEdificio(false)
+    if (error) { showToast('Errore salvataggio condominio: ' + error.message, 'error'); return }
+    const nome = edificiList.find(ed => ed.id === nuovoId)?.nome || null
+    showToast('Condominio aggiornato ✓', 'success')
+    if (onEdificioChanged) onEdificioChanged(nuovoId, nome)
+  }
 
   // Blocco scroll sfondo quando il modale "aggiungi adempimento" è aperto
   useEffect(() => {
@@ -154,6 +172,16 @@ export default function VerbaleReport({ verbale }) {
     <div>
       <div className="page-title">{verbale.titolo || a.denominazione || 'Verbale'}</div>
       <div className="page-subtitle">{(a.data_assemblea || '')}{a.indirizzo ? ' · ' + a.indirizzo : ''}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 4 }}>
+        <label className="form-label" style={{ marginBottom: 0 }}>Condominio collegato</label>
+        <select
+          className="form-select" style={{ width: 260, height: 30 }}
+          value={verbale.edificio_id || ''} onChange={cambiaEdificio} disabled={savingEdificio}
+        >
+          <option value="">— Nessuno, assegna —</option>
+          {edificiList.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+        </select>
+      </div>
 
       <div className="verbale-tabs">
         {TABS.map(t => (

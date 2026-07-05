@@ -137,7 +137,13 @@ export default function Verbali() {
             <div className="verbali-welcome-sub">Seleziona un verbale dall'elenco a sinistra, oppure importane uno nuovo.</div>
           </div>
         ) : (
-          <VerbaleReport verbale={current} />
+          <VerbaleReport
+            verbale={current}
+            onEdificioChanged={(edificio_id, nome) => {
+              setCurrent(c => ({ ...c, edificio_id, edifici: nome ? { nome } : null }))
+              load()
+            }}
+          />
         )}
       </div>
     </div>
