@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Incarichi from './pages/Incarichi'
+import Verbali from './pages/Verbali'
 import IncaricoDetail from './pages/IncaricoDetail'
 import Fornitori from './pages/Fornitori'
 import Edifici from './pages/Edifici'
@@ -111,6 +112,7 @@ export default function App() {
         <main className="main-content">
           {page === 'dashboard'   && <Dashboard />}
           {page === 'incarichi'   && <Incarichi />}
+          {page === 'verbali'     && <Verbali />}
           {page === 'dettaglio'   && <IncaricoDetail />}
           {page === 'fornitori'   && <Fornitori />}
           {page === 'edifici'     && <Edifici />}

@@ -302,6 +302,60 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 .overdue-modal-text { font-size: 14px; color: var(--slate); margin-bottom: 8px; }
 .overdue-modal-actions { display: flex; gap: 10px; }
 
+/* VERBALI — modulo dedicato, layout a due colonne (lista + contenuto) */
+.verbali-shell {
+  display: flex; gap: 20px;
+  height: calc(100vh - 56px);
+  margin: -28px -32px; padding: 28px 32px;
+}
+.verbali-sidebar {
+  width: 300px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card);
+  padding: 16px; box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.verbali-sidebar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.verbali-sidebar-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+.verbali-sort-row { display: flex; gap: 6px; margin-bottom: 10px; }
+.verbali-sort-btn {
+  flex: 1; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 5px 6px; font-size: 11px; color: var(--slate); cursor: pointer;
+}
+.verbali-sort-btn.active { background: var(--primary-light); color: var(--primary-dark); border-color: var(--primary-light); font-weight: 600; }
+.verbali-count { font-size: 11px; color: var(--fog); margin-bottom: 8px; }
+.verbali-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.verbali-empty { text-align: center; color: var(--fog); font-size: 12px; padding: 24px 8px; }
+.verbali-item {
+  position: relative; padding: 10px 32px 10px 12px; border-radius: var(--r);
+  cursor: pointer; transition: background .1s;
+}
+.verbali-item:hover { background: var(--paper); }
+.verbali-item.active { background: var(--primary-light); }
+.verbali-item-name { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+.verbali-item-meta { font-size: 11px; color: var(--fog); }
+.verbali-item-del {
+  position: absolute; top: 8px; right: 6px; background: none; border: none;
+  color: var(--fog); cursor: pointer; padding: 4px; border-radius: 4px;
+}
+.verbali-item-del:hover { color: var(--danger); background: rgba(220,38,38,.08); }
+
+.verbali-content {
+  flex: 1; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card);
+  padding: 28px; box-shadow: var(--shadow); overflow-y: auto;
+}
+.verbali-welcome {
+  height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 10px;
+}
+.verbali-welcome-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+.verbali-welcome-sub { font-size: 13px; color: var(--fog); max-width: 320px; }
+
+@media (max-width: 768px) {
+  .verbali-shell { flex-direction: column; height: auto; margin: -16px; padding: 16px; }
+  .verbali-sidebar { width: 100%; }
+}
+
 /* LOG */
 .log-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .log-item { border-left: 3px solid var(--line); padding: 8px 12px; }
