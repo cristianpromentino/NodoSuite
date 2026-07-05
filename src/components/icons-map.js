@@ -19,6 +19,9 @@ import {
   MapArrowRight,
   Hourglass,
   CalendarDate,
+  CallChatRounded,
+  Letter,
+  Phone,
 } from '@solar-icons/react-perf/LineDuotone';
 
 import {
@@ -67,4 +70,7 @@ export const UTILITY_ICONS = {
   caricamento: Hourglass,
   successo: CheckSquare,
   scadenza: CalendarDate,
+  whatsapp: CallChatRounded,
+  email: Letter,
+  telefono: Phone,
 };
