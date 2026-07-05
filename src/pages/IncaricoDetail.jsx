@@ -7,6 +7,12 @@ import { ACTION_ICONS } from '../components/icons-map'
 const STATO_LABEL = { in_attesa: 'In attesa', in_corso: 'In corso', completato: 'Completato', bloccato: 'Bloccato' }
 const ORIGINE_LABEL = { verbale: 'Verbale assemblea', diretto: 'Diretto', segnalazione: 'Segnalazione' }
 
+function isScaduto(i) {
+  if (!i.data_scadenza || i.stato === 'completato') return false
+  const oggi = new Date(); oggi.setHours(0, 0, 0, 0)
+  return new Date(i.data_scadenza) < oggi
+}
+
 export default function IncaricoDetail() {
   const { selectedId, navigate, profilo, isAdmin, showToast } = useApp()
   const [incarico, setIncarico] = useState(null)
@@ -184,7 +190,9 @@ export default function IncaricoDetail() {
             </div>
             <div>
               <div className="form-label" style={{ marginBottom: 4 }}>Stato</div>
-              <span className={`badge badge-${incarico.stato}`}>{STATO_LABEL[incarico.stato]}</span>
+              {isScaduto(incarico)
+                ? <span className="badge badge-scaduto">Scaduto</span>
+                : <span className={`badge badge-${incarico.stato}`}>{STATO_LABEL[incarico.stato]}</span>}
             </div>
             <div>
               <div className="form-label" style={{ marginBottom: 4 }}>Condominio</div>

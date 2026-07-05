@@ -6,7 +6,7 @@ import { NAV_ICONS } from '../components/icons-map'
 
 export default function Dashboard() {
   const { navigate } = useApp()
-  const [stats, setStats] = useState({ totale: 0, in_attesa: 0, in_corso: 0, bloccato: 0, completato: 0, in_scadenza: 0 })
+  const [stats, setStats] = useState({ totale: 0, in_attesa: 0, in_corso: 0, bloccato: 0, completato: 0, scaduti: 0, in_scadenza: 0 })
   const [recenti, setRecenti] = useState([])
 
   useEffect(() => { loadData() }, [])
@@ -19,19 +19,27 @@ export default function Dashboard() {
 
     if (!data) return
     const oggi = new Date()
-    const tra7 = new Date(); tra7.setDate(oggi.getDate() + 7)
+    oggi.setHours(0, 0, 0, 0)
+    const tra7 = new Date(oggi); tra7.setDate(oggi.getDate() + 7)
     setStats({
       totale: data.length,
       in_attesa: data.filter(i => i.stato === 'in_attesa').length,
       in_corso: data.filter(i => i.stato === 'in_corso').length,
       bloccato: data.filter(i => i.stato === 'bloccato').length,
       completato: data.filter(i => i.stato === 'completato').length,
-      in_scadenza: data.filter(i => i.data_scadenza && new Date(i.data_scadenza) <= tra7 && i.stato !== 'completato').length,
+      scaduti: data.filter(i => i.data_scadenza && new Date(i.data_scadenza) < oggi && i.stato !== 'completato').length,
+      in_scadenza: data.filter(i => i.data_scadenza && new Date(i.data_scadenza) >= oggi && new Date(i.data_scadenza) <= tra7 && i.stato !== 'completato').length,
     })
     setRecenti(data.slice(0, 5))
   }
 
   const STATO_LABEL = { in_attesa: 'In attesa', in_corso: 'In corso', completato: 'Completato', bloccato: 'Bloccato' }
+
+  function isScaduto(i) {
+    if (!i.data_scadenza || i.stato === 'completato') return false
+    const oggi = new Date(); oggi.setHours(0, 0, 0, 0)
+    return new Date(i.data_scadenza) < oggi
+  }
 
   return (
     <div>
@@ -57,6 +65,10 @@ export default function Dashboard() {
         <div className="stat-card">
           <div className="stat-card-value" style={{ color: '#92400e' }}>{stats.in_attesa}</div>
           <div className="stat-card-label">In attesa</div>
+        </div>
+        <div className="stat-card scaduto">
+          <div className="stat-card-value">{stats.scaduti}</div>
+          <div className="stat-card-label">Scaduti</div>
         </div>
         <div className="stat-card in-scadenza">
           <div className="stat-card-value">{stats.in_scadenza}</div>
@@ -95,11 +107,15 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {recenti.map(i => (
-                <tr key={i.id} onClick={() => navigate('dettaglio', i.id)}>
+                <tr key={i.id} className={isScaduto(i) ? 'row-scaduto' : ''} onClick={() => navigate('dettaglio', i.id)}>
                   <td>{i.edifici?.nome || '—'}</td>
                   <td>{i.descrizione.length > 50 ? i.descrizione.slice(0, 50) + '...' : i.descrizione}</td>
                   <td>{i.fornitori?.ragione_sociale || <span style={{ color: 'var(--fog)' }}>Da assegnare</span>}</td>
-                  <td><span className={`badge badge-${i.stato}`}>{STATO_LABEL[i.stato]}</span></td>
+                  <td>
+                    {isScaduto(i)
+                      ? <span className="badge badge-scaduto">Scaduto</span>
+                      : <span className={`badge badge-${i.stato}`}>{STATO_LABEL[i.stato]}</span>}
+                  </td>
                   <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>
                     {i.data_scadenza ? new Date(i.data_scadenza).toLocaleDateString('it-IT') : '—'}
                   </td>

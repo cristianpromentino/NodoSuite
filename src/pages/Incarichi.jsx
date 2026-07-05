@@ -7,6 +7,12 @@ import { NAV_ICONS, ACTION_ICONS } from '../components/icons-map'
 const STATO_LABEL = { in_attesa: 'In attesa', in_corso: 'In corso', completato: 'Completato', bloccato: 'Bloccato' }
 const ORIGINE_LABEL = { verbale: 'Verbale', diretto: 'Diretto', segnalazione: 'Segnalazione' }
 
+function isScaduto(i) {
+  if (!i.data_scadenza || i.stato === 'completato') return false
+  const oggi = new Date(); oggi.setHours(0, 0, 0, 0)
+  return new Date(i.data_scadenza) < oggi
+}
+
 export default function Incarichi() {
   const { navigate, profilo, showToast } = useApp()
   const [incarichi, setIncarichi] = useState([])
@@ -170,12 +176,16 @@ export default function Incarichi() {
             </thead>
             <tbody>
               {filtrati.map(i => (
-                <tr key={i.id} onClick={() => navigate('dettaglio', i.id)}>
+                <tr key={i.id} className={isScaduto(i) ? 'row-scaduto' : ''} onClick={() => navigate('dettaglio', i.id)}>
                   <td>{i.edifici?.nome || <span style={{ color: 'var(--fog)' }}>—</span>}</td>
                   <td>{i.descrizione.length > 55 ? i.descrizione.slice(0, 55) + '...' : i.descrizione}</td>
                   <td>{i.fornitori?.ragione_sociale || <span style={{ color: 'var(--fog)' }}>Da assegnare</span>}</td>
                   <td><span className={`badge badge-${i.origine}`}>{ORIGINE_LABEL[i.origine]}</span></td>
-                  <td><span className={`badge badge-${i.stato}`}>{STATO_LABEL[i.stato]}</span></td>
+                  <td>
+                    {isScaduto(i)
+                      ? <span className="badge badge-scaduto">Scaduto</span>
+                      : <span className={`badge badge-${i.stato}`}>{STATO_LABEL[i.stato]}</span>}
+                  </td>
                   <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>
                     {i.data_scadenza ? new Date(i.data_scadenza).toLocaleDateString('it-IT') : '—'}
                   </td>
