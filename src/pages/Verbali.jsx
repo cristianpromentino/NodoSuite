@@ -4,6 +4,7 @@ import { useApp } from '../App'
 import Icon from '../components/Icon'
 import { NAV_ICONS, ACTION_ICONS } from '../components/icons-map'
 import VerbaleReport from './VerbaleReport'
+import ImportVerbaleModal from './ImportVerbaleModal'
 
 function parseDate(str) {
   if (!str) return 0
@@ -20,6 +21,7 @@ export default function Verbali() {
   const [search, setSearch] = useState('')
   const [sortMode, setSortMode] = useState('data')
   const [sortDir, setSortDir] = useState(-1)
+  const [showImport, setShowImport] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -75,7 +77,7 @@ export default function Verbali() {
       <div className="verbali-sidebar">
         <div className="verbali-sidebar-header">
           <div className="verbali-sidebar-title">Verbali</div>
-          <button className="btn btn-primary btn-sm">+ Nuovo</button>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowImport(true)}>+ Nuovo</button>
         </div>
         <input
           className="form-input"
@@ -119,6 +121,13 @@ export default function Verbali() {
           ))}
         </div>
       </div>
+
+      {showImport && (
+        <ImportVerbaleModal
+          onClose={() => setShowImport(false)}
+          onImported={(v) => { setShowImport(false); load(); setCurrent(v) }}
+        />
+      )}
 
       <div className="verbali-content">
         {!current ? (
