@@ -276,7 +276,7 @@ export default function Condomini() {
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-outline btn-sm" onClick={() => apriEdit(c)}><Icon icon={ACTION_ICONS.modifica} size="sm" /></button>
-                      <button className="btn btn-outline btn-sm" title={(c.stato || 'attivo') === 'ex' ? 'Riattiva' : 'Segna come Ex'} onClick={() => toggleStato(c)}>
+                      <button className="btn btn-outline btn-sm toggle-stato-btn" title={(c.stato || 'attivo') === 'ex' ? 'Riattiva' : 'Segna come Ex'} onClick={() => toggleStato(c)}>
                         {c.stato === 'ex' ? '🟢' : '⚫'}
                       </button>
                       {isAdmin() && <button className="btn btn-danger btn-sm" onClick={() => elimina(c.id)}><Icon icon={ACTION_ICONS.elimina} size="sm" /></button>}

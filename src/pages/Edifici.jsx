@@ -169,7 +169,7 @@ export default function Edifici() {
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn btn-outline btn-sm" onClick={() => apriEdit(e)}><Icon icon={ACTION_ICONS.modifica} size="sm" /></button>
                       <button
-                        className="btn btn-outline btn-sm"
+                        className="btn btn-outline btn-sm toggle-stato-btn"
                         title={e.stato === 'cessato' ? 'Riattiva' : 'Segna come cessato'}
                         onClick={() => toggleStato(e)}
                       >
