@@ -356,6 +356,20 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
   .verbali-sidebar { width: 100%; }
 }
 
+/* TAB REPORT VERBALE */
+.verbale-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--line); margin: 16px 0 20px; padding-bottom: 0;
+}
+.verbale-tab {
+  background: none; border: none; cursor: pointer;
+  padding: 8px 14px; font-size: 12px; font-weight: 500; color: var(--slate);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  font-family: 'Inter', sans-serif;
+}
+.verbale-tab:hover { color: var(--ink); }
+.verbale-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
 /* LOG */
 .log-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .log-item { border-left: 3px solid var(--line); padding: 8px 12px; }
