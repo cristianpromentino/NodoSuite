@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import Icon from '../components/Icon'
 import { NAV_ICONS, ACTION_ICONS } from '../components/icons-map'
+import VerbaleReport from './VerbaleReport'
 
 function parseDate(str) {
   if (!str) return 0
@@ -127,13 +128,7 @@ export default function Verbali() {
             <div className="verbali-welcome-sub">Seleziona un verbale dall'elenco a sinistra, oppure importane uno nuovo.</div>
           </div>
         ) : (
-          <div className="verbali-report-placeholder">
-            <div className="page-title">{current.titolo || current.anagrafica?.denominazione || 'Verbale'}</div>
-            <div className="page-subtitle">{current.anagrafica?.data_assemblea || ''}</div>
-            <p style={{ marginTop: 20, color: 'var(--fog)', fontSize: 13 }}>
-              La vista completa del report (Anagrafica, Organi, Partecipanti, OdG, Relazioni, Adempimenti) arriva nella prossima fase.
-            </p>
-          </div>
+          <VerbaleReport verbale={current} />
         )}
       </div>
     </div>
