@@ -63,7 +63,6 @@ body {
   margin-left: var(--sidebar-width);
   flex: 1;
   padding: 28px 32px;
-  max-width: 1200px;
   transition: margin-left .15s ease;
 }
 .app-shell.collapsed .main-content { margin-left: var(--sidebar-width-collapsed); }
