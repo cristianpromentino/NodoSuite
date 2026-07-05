@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import Icon from '../components/Icon'
-import { ACTION_ICONS } from '../components/icons-map'
+import { ACTION_ICONS, UTILITY_ICONS } from '../components/icons-map'
 
 const STATO_LABEL = { 'da-fare': 'Da fare', 'in-corso': 'In corso', 'completato': 'Completato', 'annullato': 'Annullato' }
 const URGENZA_LABEL = { urgente: 'Urgente', alta: 'Alta', media: 'Media', bassa: 'Bassa' }
@@ -19,7 +19,6 @@ function calcDur(s, e) {
 const TABS = [
   { key: 'anagrafica', label: 'Anagrafica' },
   { key: 'organi', label: 'Organi' },
-  { key: 'amministratore', label: 'Amministratore' },
   { key: 'partecipanti', label: 'Partecipanti' },
   { key: 'odg', label: 'Ordine del Giorno' },
   { key: 'relazioni', label: 'Relazioni' },
@@ -74,7 +73,6 @@ export default function VerbaleReport({ verbale }) {
 
   const a = verbale.anagrafica || {}
   const o = verbale.organi || {}
-  const adm = verbale.amministratore || {}
   const dur = calcDur(a.ora_inizio, a.ora_chiusura)
 
   async function updateAdempCampo(id, field, value) {
@@ -135,7 +133,12 @@ export default function VerbaleReport({ verbale }) {
                 <div className="stat-card"><div className="stat-card-value">{a.totale_convocati || '—'}</div><div className="stat-card-label">Condòmini convocati</div></div>
                 <div className="stat-card"><div className="stat-card-value">{a.totale_presenti_delegati || '—'}</div><div className="stat-card-label">Presenti / delegati</div></div>
                 <div className="stat-card"><div className="stat-card-value">{a.millesimi_rappresentati || '—'}</div><div className="stat-card-label">su {a.millesimi_totali || 1000} millesimi</div></div>
-                <div className="stat-card"><div className="stat-card-value" style={{ color: a.quorum_raggiunto ? 'var(--success)' : 'var(--danger)' }}>{a.quorum_raggiunto ? '✔' : '✖'}</div><div className="stat-card-label">{a.quorum_raggiunto ? 'Quorum raggiunto' : 'Quorum non raggiunto'}</div></div>
+                <div className="stat-card">
+                  <div className="stat-card-value" style={{ display: 'flex', justifyContent: 'center' }}>
+                    <Icon icon={a.quorum_raggiunto ? UTILITY_ICONS.approvato : ACTION_ICONS.chiudi} size={28} color={a.quorum_raggiunto ? 'var(--success)' : 'var(--danger)'} />
+                  </div>
+                  <div className="stat-card-label">{a.quorum_raggiunto ? 'Quorum raggiunto' : 'Quorum non raggiunto'}</div>
+                </div>
                 <div className="stat-card"><div className="stat-card-value">{dur}</div><div className="stat-card-label">{a.ora_inizio || ''}{a.ora_chiusura ? ' → ' + a.ora_chiusura : ''}</div></div>
               </div>
               <table>
@@ -159,16 +162,6 @@ export default function VerbaleReport({ verbale }) {
                 <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Segretario</td><td>{o.segretario || '—'}</td></tr>
                 <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Firma Presidente</td><td>{o.firma_presidente || '—'}</td></tr>
                 <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Firma Segretario</td><td>{o.firma_segretario || '—'}</td></tr>
-              </tbody>
-            </table>
-          )}
-
-          {tab === 'amministratore' && (
-            <table>
-              <tbody>
-                <tr><td style={{ width: '40%', fontWeight: 600, color: 'var(--slate)' }}>Soggetto</td><td>{adm.nominativo || '—'}</td></tr>
-                <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Compenso</td><td>{adm.compenso || '—'}</td></tr>
-                <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Esito</td><td>{adm.esito ? <span className="badge badge-completato">{adm.esito}</span> : '—'}</td></tr>
               </tbody>
             </table>
           )}
@@ -214,7 +207,7 @@ export default function VerbaleReport({ verbale }) {
                       <div><div className="form-label">Importo</div><div>{item.importo || '—'}</div></div>
                       <div><div className="form-label">Rif. normativo</div><div>{item.rif_normativo || '—'}</div></div>
                     </div>
-                    {item.note && <div style={{ marginTop: 10, fontSize: 12, color: 'var(--warning)' }}>⚠ {item.note}</div>}
+                    {item.note && <div style={{ marginTop: 10, fontSize: 12, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 6 }}><Icon icon={UTILITY_ICONS.pericolo} size="sm" /> {item.note}</div>}
                   </div>
                 ))}
               </div>
