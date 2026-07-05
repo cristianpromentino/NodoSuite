@@ -18,6 +18,7 @@ import {
   MapArrowLeft,
   MapArrowRight,
   Hourglass,
+  CalendarDate,
 } from '@solar-icons/react-perf/LineDuotone';
 
 import {
@@ -65,4 +66,5 @@ export const UTILITY_ICONS = {
   dragDrop: MoveToFolder,
   caricamento: Hourglass,
   successo: CheckSquare,
+  scadenza: CalendarDate,
 };
