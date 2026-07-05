@@ -17,6 +17,7 @@ function calcDur(s, e) {
 }
 
 const TABS = [
+  { key: 'pdf', label: 'Verbale PDF' },
   { key: 'anagrafica', label: 'Anagrafica' },
   { key: 'organi', label: 'Organi' },
   { key: 'partecipanti', label: 'Partecipanti' },
@@ -33,6 +34,7 @@ export default function VerbaleReport({ verbale }) {
   const [adempimenti, setAdempimenti] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddAdemp, setShowAddAdemp] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState(null)
   const [form, setForm] = useState({ attivita: '', area: 'Amministrazione', urgenza: 'media', responsabile: '', scadenza: '' })
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export default function VerbaleReport({ verbale }) {
 
   async function load() {
     setLoading(true)
+    setPdfUrl(null)
     const [{ data: p }, { data: o }, { data: a }] = await Promise.all([
       supabase.from('verbale_partecipanti').select('*').eq('verbale_id', verbale.id).order('n'),
       supabase.from('verbale_odg').select('*').eq('verbale_id', verbale.id).order('n'),
@@ -68,6 +71,10 @@ export default function VerbaleReport({ verbale }) {
     setPartecipanti(p || [])
     setOdg(o || [])
     setAdempimenti(a || [])
+    if (verbale.pdf_path) {
+      const { data: signed } = await supabase.storage.from('verbali-pdf').createSignedUrl(verbale.pdf_path, 3600)
+      setPdfUrl(signed?.signedUrl || null)
+    }
     setLoading(false)
   }
 
@@ -127,6 +134,24 @@ export default function VerbaleReport({ verbale }) {
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--fog)' }}>Caricamento...</div>
       ) : (
         <div className="verbale-tab-panel">
+          {tab === 'pdf' && (
+            !verbale.pdf_path ? (
+              <div className="empty-state"><div className="empty-text">Nessun PDF originale disponibile (verbale importato da JSON)</div></div>
+            ) : !pdfUrl ? (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--fog)' }}>Caricamento PDF...</div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                  <a href={pdfUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm">Apri in una nuova scheda →</a>
+                </div>
+                <iframe
+                  src={pdfUrl} title="Verbale PDF originale"
+                  style={{ width: '100%', height: '75vh', border: '1px solid var(--line)', borderRadius: 'var(--r)' }}
+                />
+              </div>
+            )
+          )}
+
           {tab === 'anagrafica' && (
             <>
               <div className="stat-grid" style={{ marginBottom: 20 }}>
