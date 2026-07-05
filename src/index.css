@@ -180,6 +180,13 @@ tbody td { padding: 12px 16px; font-size: 13px; color: var(--ink2); }
 .badge-diretto { background: var(--primary-light); color: var(--primary-dark); }
 .badge-segnalazione { background: #fce7f3; color: #9d174d; }
 
+/* BADGE SCADUTO — automatico, non è uno stato salvato nel DB */
+.badge-scaduto { background: #000000; color: #ffffff; }
+
+/* RIGA EVIDENZIATA per incarichi scaduti */
+tbody tr.row-scaduto { background: rgba(220,38,38,.05); box-shadow: inset 3px 0 0 var(--danger); }
+tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
+
 /* BUTTONS — 4 varianti x 3 size, pill */
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
