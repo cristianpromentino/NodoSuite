@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react'
+import Icon from './Icon'
+import { NAV_ICONS, ACTION_ICONS, UTILITY_ICONS } from './icons-map'
 
 /**
  * ImportModal — componente generico per import CSV/XLSX con anteprima
@@ -176,8 +178,10 @@ export default function ImportModal({ title, fields, columnMap, onConfirm, onClo
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ width: 'min(720px, 96vw)' }}>
         <div className="modal-header">
-          <div className="modal-title">📥 {title}</div>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon icon={NAV_ICONS.integrazioni} size="sm" /> {title}
+          </div>
+          <button className="modal-close" onClick={onClose}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
         </div>
 
         {/* STEP: UPLOAD */}
@@ -191,10 +195,10 @@ export default function ImportModal({ title, fields, columnMap, onConfirm, onClo
                 textAlign: 'center', cursor: 'pointer', marginBottom: 16,
                 transition: 'border-color .15s', background: 'var(--paper)'
               }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--gold)'}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--line)'}
             >
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📂</div>
+              <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'center' }}><Icon icon={UTILITY_ICONS.dragDrop} size={36} /></div>
               <div style={{ fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>Trascina il file qui oppure clicca per selezionarlo</div>
               <div style={{ fontSize: 12, color: 'var(--fog)' }}>Formati supportati: CSV, XLSX, XLS</div>
               <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }}
@@ -205,7 +209,9 @@ export default function ImportModal({ title, fields, columnMap, onConfirm, onClo
               <div style={{ fontSize: 12, color: 'var(--fog)' }}>
                 Colonne attese: <strong>{fields.map(f => f.label + (f.required ? '*' : '')).join(', ')}</strong>
               </div>
-              <button className="btn btn-outline btn-sm" onClick={downloadTemplate}>⬇ Scarica template CSV</button>
+              <button className="btn btn-outline btn-sm" onClick={downloadTemplate}>
+                <Icon icon={NAV_ICONS.integrazioni} size="sm" /> Scarica template CSV
+              </button>
             </div>
 
             {errors.length > 0 && (
@@ -257,7 +263,7 @@ export default function ImportModal({ title, fields, columnMap, onConfirm, onClo
                 <tbody>
                   {rows.slice(0, 50).map((row, i) => (
                     <tr key={i} style={{ borderBottom: '1px solid var(--line)' }}>
-                      <td style={{ padding: '7px 12px', color: 'var(--fog)', fontFamily: 'DM Mono, monospace' }}>{i + 1}</td>
+                      <td style={{ padding: '7px 12px', color: 'var(--fog)', fontFamily: 'ui-monospace, monospace' }}>{i + 1}</td>
                       {fields.map(f => (
                         <td key={f.key} style={{ padding: '7px 12px', color: 'var(--ink2)' }}>
                           {row[f.key] || <span style={{ color: 'var(--fog)', fontStyle: 'italic' }}>—</span>}
@@ -276,7 +282,7 @@ export default function ImportModal({ title, fields, columnMap, onConfirm, onClo
 
             <div className="form-actions">
               <button className="btn btn-outline" onClick={() => { setStep('upload'); setRows([]); setErrors([]) }}>← Ricarica file</button>
-              <button className="btn btn-gold" onClick={handleConfirm}>
+              <button className="btn btn-primary" onClick={handleConfirm}>
                 Importa {rows.length} {rows.length === 1 ? 'record' : 'record'} →
               </button>
             </div>
@@ -286,7 +292,7 @@ export default function ImportModal({ title, fields, columnMap, onConfirm, onClo
         {/* STEP: IMPORTING */}
         {step === 'importing' && (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <div style={{ fontSize: 36, marginBottom: 16 }}>⏳</div>
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}><Icon icon={UTILITY_ICONS.caricamento} size={36} /></div>
             <div style={{ fontWeight: 600, color: 'var(--ink)', marginBottom: 8 }}>Importazione in corso...</div>
             <div style={{ fontSize: 13, color: 'var(--fog)' }}>Inserimento {rows.length} record nel database</div>
           </div>
@@ -295,14 +301,14 @@ export default function ImportModal({ title, fields, columnMap, onConfirm, onClo
         {/* STEP: DONE */}
         {step === 'done' && (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}><Icon icon={UTILITY_ICONS.successo} size={48} color="var(--success)" /></div>
             <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--ink)', marginBottom: 8 }}>
               Import completato!
             </div>
             <div style={{ fontSize: 13, color: 'var(--slate)', marginBottom: 24 }}>
               {importedCount} record importati correttamente.
             </div>
-            <button className="btn btn-gold" onClick={onClose}>Chiudi</button>
+            <button className="btn btn-primary" onClick={onClose}>Chiudi</button>
           </div>
         )}
       </div>

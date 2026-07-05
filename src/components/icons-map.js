@@ -17,7 +17,13 @@ import {
   MultipleForwardRight,
   MapArrowLeft,
   MapArrowRight,
+  Hourglass,
 } from '@solar-icons/react-perf/LineDuotone';
+
+import {
+  MoveToFolder,
+  CheckSquare,
+} from '@solar-icons/react-perf/BoldDuotone';
 
 export const NAV_ICONS = {
   home: House,
@@ -43,6 +49,7 @@ export const NAV_LABELS = {
   integrazioni: 'Integrazioni',
 };
 
+// Icone azione/utility riutilizzate in liste, modali e paginazione
 export const ACTION_ICONS = {
   chiudi: CloseSquare,
   modifica: Pen,
@@ -51,4 +58,11 @@ export const ACTION_ICONS = {
   ultimaPagina: MultipleForwardRight,
   paginaPrec: MapArrowLeft,
   paginaSucc: MapArrowRight,
+};
+
+// Icone di stato per flussi di import/caricamento (usate in ImportModal)
+export const UTILITY_ICONS = {
+  dragDrop: MoveToFolder,
+  caricamento: Hourglass,
+  successo: CheckSquare,
 };
