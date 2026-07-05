@@ -71,7 +71,11 @@ export default function ImportVerbaleModal({ onClose, onImported }) {
     if (pdfFile) {
       const path = `${Date.now()}_${pdfFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
       const { error: upErr } = await supabase.storage.from('verbali-pdf').upload(path, pdfFile)
-      if (!upErr) pdf_path = path
+      if (upErr) {
+        showToast('PDF non caricato su Storage: ' + upErr.message, 'error')
+      } else {
+        pdf_path = path
+      }
     }
 
     let edificio_id = null
