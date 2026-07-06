@@ -369,6 +369,12 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 .verbale-tab:hover { color: var(--ink); }
 .verbale-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
 
+/* CSS dinamico: le tabelle dei report si adattano fluidamente alla larghezza */
+.verbale-tab-panel { overflow-x: auto; }
+.verbale-tab-panel table { font-size: clamp(10px, 1.05vw, 13px); }
+.verbale-tab-panel th, .verbale-tab-panel td { padding: clamp(4px, 0.6vw, 12px) clamp(6px, 0.9vw, 16px); }
+.verbale-tab-panel .form-card { padding: clamp(12px, 1.4vw, 20px); }
+
 /* LOG */
 .log-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .log-item { border-left: 3px solid var(--line); padding: 8px 12px; }
