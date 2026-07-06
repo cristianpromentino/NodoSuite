@@ -385,6 +385,7 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 }
 .verbale-tab:hover { color: var(--ink); }
 .verbale-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.verbale-text-block { text-align: justify; }
 
 .verbali-back-mobile { display: none; }
 @media (max-width: 768px) {
