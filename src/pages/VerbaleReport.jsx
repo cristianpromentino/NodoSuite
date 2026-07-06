@@ -541,7 +541,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
                       <div className="form-label">Tipo delibera</div><div>{item.tipo || '—'}</div>
                     </div>
                     <div style={{ fontSize: 13, marginBottom: 10 }}>
-                      <div className="form-label">Delibera</div><div>{item.delibera || '—'}</div>
+                      <div className="form-label">Delibera</div><div className="verbale-text-block">{item.delibera || '—'}</div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px', fontSize: 13 }}>
                       <div><div className="form-label">Esito votazione</div><div>{item.esito || '—'}</div></div>
@@ -564,7 +564,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
                       <div style={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, color: 'var(--primary)' }}>{item.n}</div>
                       <div style={{ fontWeight: 600 }}>{item.titolo}</div>
                     </div>
-                    <div style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--ink2)' }}>{item.relazione || 'Nessuna relazione disponibile.'}</div>
+                    <div className="verbale-text-block" style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--ink2)' }}>{item.relazione || 'Nessuna relazione disponibile.'}</div>
                   </div>
                 ))}
               </div>
@@ -573,8 +573,8 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
 
           {tab === 'adempimenti' && (
             <>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
-                <button className="btn btn-primary" onClick={() => setShowAddAdemp(true)}>+ Aggiungi adempimento</button>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14, marginBottom: 18 }}>
+                <button className="btn btn-primary btn-lg" onClick={() => setShowAddAdemp(true)}>+ Aggiungi adempimento</button>
               </div>
               {adempimenti.length === 0 ? (
                 <div className="empty-state"><div className="empty-text">Nessun adempimento</div></div>
