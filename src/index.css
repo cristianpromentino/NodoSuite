@@ -427,12 +427,13 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
     display: block; font-size: 10px; font-weight: 600; color: var(--slate);
     text-transform: uppercase; letter-spacing: .03em; margin-bottom: 2px;
   }
-  /* Il numero progressivo (#) resta discreto, non serve enfasi da card */
+  /* Il numero progressivo (#) resta discreto, in un angolo, senza sovrapporsi al contenuto */
   .partecipanti-table td[data-label="#"], .adempimenti-table td[data-label="#"] {
-    position: absolute; opacity: .5; font-size: 10px;
+    position: absolute; top: 8px; left: 12px; opacity: .55; font-size: 10px; padding: 0 !important;
   }
   .partecipanti-table td[data-label="#"]::before, .adempimenti-table td[data-label="#"]::before { display: none; }
-  .partecipanti-table tr, .adempimenti-table tr { position: relative; padding-top: 22px; }
+  .partecipanti-table tr, .adempimenti-table tr { position: relative; padding-top: 26px; }
+  .adempimenti-table td[data-label="Incarico"] { margin-top: 6px; padding-top: 8px !important; border-top: 1px solid var(--line); }
 }
 
 @media (max-width: 768px) {
