@@ -52,6 +52,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
   const [pdfUrl, setPdfUrl] = useState(null)
   const [edificiList, setEdificiList] = useState([])
   const [savingEdificio, setSavingEdificio] = useState(false)
+  const [showSectionPicker, setShowSectionPicker] = useState(false)
   const [form, setForm] = useState({ attivita: '', area: 'Amministrazione', urgenza: 'media', responsabile: '', scadenza: '' })
 
   useEffect(() => {
@@ -419,6 +420,28 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
         ))}
       </div>
 
+      <button className="verbale-section-picker-btn" onClick={() => setShowSectionPicker(true)}>
+        <span>{TABS.find(t => t.key === tab)?.label}</span>
+        <span aria-hidden="true">⌄</span>
+      </button>
+
+      {showSectionPicker && (
+        <div className="bottom-nav-more-overlay" onClick={() => setShowSectionPicker(false)}>
+          <div className="bottom-nav-more-sheet" onClick={e => e.stopPropagation()}>
+            <div className="bottom-nav-more-title">Sezione</div>
+            {TABS.map(t => (
+              <button
+                key={t.key}
+                className={`bottom-nav-more-item ${tab === t.key ? 'active' : ''}`}
+                onClick={() => { setTab(t.key); setShowSectionPicker(false) }}
+              >
+                <span>{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--fog)' }}>Caricamento...</div>
       ) : (
@@ -455,7 +478,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
                 </div>
                 <div className="stat-card"><div className="stat-card-value">{dur}</div><div className="stat-card-label">{a.ora_inizio || ''}{a.ora_chiusura ? ' → ' + a.ora_chiusura : ''}</div></div>
               </div>
-              <table>
+              <table className="kv-table">
                 <tbody>
                   <tr><td style={{ width: '40%', fontWeight: 600, color: 'var(--slate)' }}>Denominazione</td><td>{a.denominazione || '—'}</td></tr>
                   <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Indirizzo</td><td>{a.indirizzo || '—'}</td></tr>
@@ -470,7 +493,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
           )}
 
           {tab === 'organi' && (
-            <table>
+            <table className="kv-table">
               <tbody>
                 <tr><td style={{ width: '40%', fontWeight: 600, color: 'var(--slate)' }}>Presidente</td><td>{o.presidente || '—'}</td></tr>
                 <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Segretario</td><td>{o.segretario || '—'}</td></tr>
@@ -482,19 +505,19 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
 
           {tab === 'partecipanti' && (
             partecipanti.length === 0 ? <div className="empty-state"><div className="empty-text">Nessun partecipante registrato</div></div> : (
-              <table>
+              <table className="partecipanti-table">
                 <thead>
                   <tr><th>#</th><th>Nominativo</th><th>Modalità</th><th>Delegato</th><th>Millesimi</th><th>Note</th></tr>
                 </thead>
                 <tbody>
                   {partecipanti.map(p => (
                     <tr key={p.id}>
-                      <td style={{ fontFamily: 'ui-monospace, monospace' }}>{String(p.n || '').padStart(2, '0')}</td>
-                      <td><strong>{p.nominativo}</strong></td>
-                      <td><span className={`badge ${p.modalita === 'PRESENTE' ? 'badge-completato' : 'badge-diretto'}`}>{p.modalita === 'PRESENTE' ? 'Presente' : 'Delega'}</span></td>
-                      <td style={{ fontSize: 12 }}>{p.delegato || '—'}</td>
-                      <td>{p.millesimi || 0}</td>
-                      <td style={{ fontSize: 11, color: 'var(--fog)' }}>{p.note || ''}</td>
+                      <td data-label="#" style={{ fontFamily: 'ui-monospace, monospace' }}>{String(p.n || '').padStart(2, '0')}</td>
+                      <td data-label="Nominativo"><strong>{p.nominativo}</strong></td>
+                      <td data-label="Modalità"><span className={`badge ${p.modalita === 'PRESENTE' ? 'badge-completato' : 'badge-diretto'}`}>{p.modalita === 'PRESENTE' ? 'Presente' : 'Delega'}</span></td>
+                      <td data-label="Delegato" style={{ fontSize: 12 }}>{p.delegato || '—'}</td>
+                      <td data-label="Millesimi">{p.millesimi || 0}</td>
+                      <td data-label="Note" style={{ fontSize: 11, color: 'var(--fog)' }}>{p.note || ''}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -552,19 +575,19 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
               {adempimenti.length === 0 ? (
                 <div className="empty-state"><div className="empty-text">Nessun adempimento</div></div>
               ) : (
-                <table>
+                <table className="adempimenti-table">
                   <thead>
                     <tr><th>#</th><th>Attività</th><th>Area</th><th>Urgenza</th><th>Stato</th><th>Scadenza</th></tr>
                   </thead>
                   <tbody>
                     {adempimenti.map(ad => (
                       <tr key={ad.id} onClick={() => apriAdempimento(ad)} style={{ cursor: 'pointer' }}>
-                        <td style={{ fontFamily: 'ui-monospace, monospace' }}>{String(ad.n || '').padStart(2, '0')}</td>
-                        <td style={{ maxWidth: 280 }}>{ad.attivita}{ad.incarico_id && <Icon icon={UTILITY_ICONS.successo} size="sm" color="var(--success)" style={{ marginLeft: 6, verticalAlign: 'middle' }} />}</td>
-                        <td><span className="badge" style={{ background: 'var(--paper)', color: 'var(--slate)', border: '1px solid var(--line)' }}>{ad.area}</span></td>
-                        <td><span className="badge" style={URGENZA_COLORS[ad.urgenza] || {}}>{URGENZA_LABEL[ad.urgenza] || ad.urgenza}</span></td>
-                        <td><span className="badge" style={STATO_COLORS[ad.stato] || {}}>{STATO_LABEL[ad.stato] || ad.stato}</span></td>
-                        <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{ad.scadenza || '—'}</td>
+                        <td data-label="#" style={{ fontFamily: 'ui-monospace, monospace' }}>{String(ad.n || '').padStart(2, '0')}</td>
+                        <td data-label="Attività" style={{ maxWidth: 280 }}>{ad.attivita}{ad.incarico_id && <Icon icon={UTILITY_ICONS.successo} size="sm" color="var(--success)" style={{ marginLeft: 6, verticalAlign: 'middle' }} />}</td>
+                        <td data-label="Area"><span className="badge" style={{ background: 'var(--paper)', color: 'var(--slate)', border: '1px solid var(--line)' }}>{ad.area}</span></td>
+                        <td data-label="Urgenza"><span className="badge" style={URGENZA_COLORS[ad.urgenza] || {}}>{URGENZA_LABEL[ad.urgenza] || ad.urgenza}</span></td>
+                        <td data-label="Stato"><span className="badge" style={STATO_COLORS[ad.stato] || {}}>{STATO_LABEL[ad.stato] || ad.stato}</span></td>
+                        <td data-label="Scadenza" style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{ad.scadenza || '—'}</td>
                       </tr>
                     ))}
                   </tbody>
