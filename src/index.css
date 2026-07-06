@@ -306,6 +306,7 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
   display: flex; gap: 20px;
   height: calc(100vh - 56px);
   margin: -28px -32px; padding: 28px 32px;
+  width: 100%; box-sizing: border-box; overflow-x: hidden;
 }
 .verbali-sidebar {
   width: 300px; flex-shrink: 0;
@@ -340,8 +341,22 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 .verbali-item-del:hover { color: var(--danger); background: rgba(220,38,38,.08); }
 
 .verbali-content {
-  flex: 1; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card);
+  flex: 1; width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden;
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card);
   padding: 28px; box-shadow: var(--shadow); overflow-y: auto;
+}
+
+.verbale-header-row {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px; margin-bottom: 4px; flex-wrap: wrap;
+}
+.verbale-header-row select { width: 260px; height: 30px; }
+.verbale-header-row .verbale-export-buttons { margin-left: auto; display: flex; gap: 6px; }
+
+@media (max-width: 768px) {
+  .verbale-header-row { flex-direction: column; align-items: stretch; gap: 6px; }
+  .verbale-header-row select { width: 100%; }
+  .verbale-header-row .verbale-export-buttons { margin-left: 0; width: 100%; }
+  .verbale-header-row .verbale-export-buttons button { flex: 1; justify-content: center; }
 }
 .verbali-welcome {
   height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
