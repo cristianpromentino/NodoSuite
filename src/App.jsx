@@ -9,6 +9,7 @@ import Fornitori from './pages/Fornitori'
 import Edifici from './pages/Edifici'
 import CondominPage from './pages/Condomini'
 import Integrazioni from './pages/Integrazioni'
+import Inbox from './pages/Inbox'
 import Layout from './components/Layout'
 import Toast from './components/Toast'
 import OverdueAlertModal from './components/OverdueAlertModal'
@@ -118,6 +119,7 @@ export default function App() {
           {page === 'edifici'     && <Edifici />}
           {page === 'condomini'      && <CondominPage />}
           {page === 'integrazioni'   && <Integrazioni />}
+          {page === 'inbox'          && <Inbox />}
         </main>
       </div>
       <Toast toasts={toasts} />
