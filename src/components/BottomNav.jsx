@@ -20,6 +20,7 @@ const MORE_ITEMS = [
   { route: 'fornitori', label: NAV_LABELS.fornitori, icon: NAV_ICONS.fornitori },
   { route: 'condomini', label: NAV_LABELS.persone, icon: NAV_ICONS.persone },
   { route: 'integrazioni', label: NAV_LABELS.integrazioni, icon: NAV_ICONS.integrazioni },
+  { route: 'inbox', label: NAV_LABELS.inbox, icon: NAV_ICONS.inbox },
 ]
 
 export default function BottomNav({ page, navigate }) {

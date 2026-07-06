@@ -43,6 +43,7 @@ export const NAV_ICONS = {
   dashboard: Screencast2,
   fornitori: Translation2,
   integrazioni: DownloadMinimalistic,
+  inbox: Letter,
 };
 
 export const NAV_LABELS = {
@@ -55,6 +56,7 @@ export const NAV_LABELS = {
   dashboard: 'Dashboard',
   fornitori: 'Fornitori',
   integrazioni: 'Integrazioni',
+  inbox: 'Inbox',
 };
 
 // Icone azione/utility riutilizzate in liste, modali e paginazione

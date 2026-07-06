@@ -57,6 +57,9 @@ export default function Layout({ page, navigate, profilo, collapsed, onToggleSid
           <button className={`nav-item ${page === 'integrazioni' ? 'active' : ''}`} onClick={() => navigate('integrazioni')}>
             <Icon icon={NAV_ICONS.integrazioni} size="md" /> <span>Integrazioni</span>
           </button>
+          <button className={`nav-item ${page === 'inbox' ? 'active' : ''}`} onClick={() => navigate('inbox')}>
+            <Icon icon={NAV_ICONS.inbox} size="md" /> <span>Inbox</span>
+          </button>
         </nav>
         <div className="sidebar-footer">
           <button className="btn-logout" onClick={logout}>
