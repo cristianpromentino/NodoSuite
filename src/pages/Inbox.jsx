@@ -315,7 +315,7 @@ export default function Inbox() {
                 className={`inbox-folder-btn ${folder === f.key ? 'active' : ''}`}
                 onClick={() => { setFolder(f.key); setSearch('') }}
               >
-                {f.label}
+                <span>{f.label}</span>
                 {badge > 0 && (
                   <span className={`inbox-folder-count ${isUnread ? 'inbox-folder-count-unread' : ''}`}>{badge}</span>
                 )}
