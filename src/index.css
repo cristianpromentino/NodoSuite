@@ -465,7 +465,12 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
   padding: 16px; box-shadow: var(--shadow);
   overflow: hidden;
 }
-.inbox-sidebar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.inbox-sidebar-header {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line);
+}
+.inbox-sidebar-header-actions { display: flex; gap: 6px; }
+.inbox-sidebar-header-actions button { flex: 1; }
 .inbox-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
 .inbox-item { padding: 10px 12px; border-radius: var(--r); cursor: pointer; border-left: 3px solid transparent; }
 .inbox-item:hover { background: var(--paper); }
