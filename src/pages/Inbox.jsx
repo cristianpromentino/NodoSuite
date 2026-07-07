@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import Icon from '../components/Icon'
-import { NAV_ICONS, UTILITY_ICONS } from '../components/icons-map'
+import { NAV_ICONS, UTILITY_ICONS, ACTION_ICONS } from '../components/icons-map'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const REDIRECT_URI = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-oauth-callback'
@@ -16,6 +16,7 @@ export default function Inbox() {
   const { showToast } = useApp()
   const [connection, setConnection] = useState(null)
   const [messages, setMessages] = useState([])
+  const [current, setCurrent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
 
@@ -68,6 +69,7 @@ export default function Inbox() {
     if (error) { showToast('Errore: ' + error.message, 'error'); return }
     setConnection(null)
     setMessages([])
+    setCurrent(null)
     showToast('Gmail scollegato', 'info')
   }
 
@@ -85,25 +87,27 @@ export default function Inbox() {
     setSyncing(false)
   }
 
+  async function apriMessaggio(m) {
+    setCurrent(m)
+    if (!m.is_read) {
+      setMessages(list => list.map(x => x.id === m.id ? { ...x, is_read: true } : x))
+      await supabase.from('inbox_messages').update({ is_read: true }).eq('id', m.id)
+    }
+  }
+
   if (loading) {
     return <div style={{ padding: 40, textAlign: 'center', color: 'var(--fog)' }}>Caricamento...</div>
   }
 
-  return (
-    <div>
-      <div className="topbar">
-        <div>
-          <div className="page-title">Inbox</div>
-          <div className="page-subtitle">Email in arrivo dalla casella condivisa</div>
+  if (!connection) {
+    return (
+      <div>
+        <div className="topbar">
+          <div>
+            <div className="page-title">Inbox</div>
+            <div className="page-subtitle">Email in arrivo dalla casella condivisa</div>
+          </div>
         </div>
-        {connection && (
-          <button className="btn btn-outline btn-sm" onClick={sincronizzaOra} disabled={syncing}>
-            {syncing ? <><Icon icon={UTILITY_ICONS.caricamento} size="sm" /> Sincronizzazione...</> : 'Aggiorna ora'}
-          </button>
-        )}
-      </div>
-
-      {!connection ? (
         <div className="form-card" style={{ textAlign: 'center', padding: '48px 24px' }}>
           <Icon icon={NAV_ICONS.inbox} size={40} color="var(--fog)" />
           <div style={{ fontWeight: 600, fontSize: 15, marginTop: 14, marginBottom: 6 }}>Nessuna casella collegata</div>
@@ -112,46 +116,88 @@ export default function Inbox() {
           </div>
           <button className="btn btn-primary" onClick={connettiGmail}>Connetti Gmail</button>
         </div>
-      ) : (
-        <>
-          <div className="form-card" style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-              <div>
-                <span className="badge badge-completato">Connesso</span>
-                <span style={{ fontSize: 13, color: 'var(--slate)', marginLeft: 10 }}>{connection.email_address}</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`inbox-shell ${current ? 'has-selection' : ''}`}>
+      <div className="inbox-sidebar">
+        <div className="inbox-sidebar-header">
+          <div>
+            <span className="badge badge-completato">Connesso</span>
+            <div style={{ fontSize: 11, color: 'var(--fog)', marginTop: 4 }}>{connection.email_address}</div>
+          </div>
+          <button className="btn btn-outline btn-sm" onClick={sincronizzaOra} disabled={syncing}>
+            {syncing ? <Icon icon={UTILITY_ICONS.caricamento} size="sm" /> : 'Aggiorna'}
+          </button>
+        </div>
+
+        <div className="inbox-list">
+          {messages.length === 0 ? (
+            <div className="verbali-empty">Nessuna email ancora sincronizzata.</div>
+          ) : messages.map(m => (
+            <div
+              key={m.id}
+              className={`inbox-item ${current?.id === m.id ? 'active' : ''} ${!m.is_read ? 'unread' : ''}`}
+              onClick={() => apriMessaggio(m)}
+            >
+              <div className="inbox-item-top">
+                <span className="inbox-item-from">{m.from_name || m.from_address}</span>
+                <span className="inbox-item-date">
+                  {m.received_at ? new Date(m.received_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }) : ''}
+                </span>
               </div>
-              <button className="btn btn-outline btn-sm" onClick={scollega}>Scollega</button>
+              <div className="inbox-item-subject">{m.subject}</div>
+              <div className="inbox-item-snippet">{m.snippet}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="inbox-content">
+        {!current ? (
+          <div className="verbali-welcome">
+            <Icon icon={NAV_ICONS.inbox} size={48} color="var(--fog)" />
+            <div className="verbali-welcome-title">Nessuna email selezionata</div>
+            <div className="verbali-welcome-sub">Seleziona un messaggio dall'elenco a sinistra per leggerlo.</div>
+          </div>
+        ) : (
+          <div>
+            <button className="btn btn-outline btn-sm verbali-back-mobile" onClick={() => setCurrent(null)}>← Elenco email</button>
+
+            <div className="page-title" style={{ fontSize: 18 }}>{current.subject}</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 8, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{current.from_name || current.from_address}</div>
+                <div style={{ fontSize: 11, color: 'var(--fog)' }}>{current.from_address} · a {current.to_address}</div>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--fog)', fontFamily: 'ui-monospace, monospace' }}>
+                {current.received_at ? new Date(current.received_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+              </div>
+            </div>
+
+            {current.body_html ? (
+              <iframe
+                title="Contenuto email"
+                srcDoc={current.body_html}
+                sandbox=""
+                style={{ width: '100%', minHeight: 400, border: 'none', background: '#fff' }}
+              />
+            ) : (
+              <div style={{ fontSize: 13, lineHeight: 1.7, whiteSpace: 'pre-wrap', color: 'var(--ink2)' }}>
+                {current.body_text || current.snippet || '(nessun contenuto)'}
+              </div>
+            )}
+
+            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+              <button className="btn btn-primary" onClick={() => showToast('La risposta diretta arriva nella prossima fase', 'info')}>
+                ← Rispondi
+              </button>
             </div>
           </div>
-
-          <div className="table-wrap">
-            {messages.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon"><Icon icon={NAV_ICONS.inbox} size={36} /></div>
-                <div className="empty-text">Nessuna email ancora sincronizzata. Prova "Aggiorna ora".</div>
-              </div>
-            ) : (
-              <table>
-                <thead>
-                  <tr><th>Da</th><th>Oggetto</th><th>Anteprima</th><th>Ricevuta</th></tr>
-                </thead>
-                <tbody>
-                  {messages.map(m => (
-                    <tr key={m.id} style={{ fontWeight: m.is_read ? 400 : 700 }}>
-                      <td style={{ fontSize: 13 }}>{m.from_name || m.from_address}</td>
-                      <td style={{ fontSize: 13 }}>{m.subject}</td>
-                      <td style={{ fontSize: 12, color: 'var(--fog)', fontWeight: 400 }}>{m.snippet}</td>
-                      <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, fontWeight: 400 }}>
-                        {m.received_at ? new Date(m.received_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   )
 }
