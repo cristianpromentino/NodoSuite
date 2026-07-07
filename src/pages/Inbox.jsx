@@ -85,7 +85,12 @@ export default function Inbox() {
       const res = await fetch(SYNC_FUNCTION_URL, { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore sincronizzazione')
-      showToast(data.nuovi > 0 ? `✓ ${data.nuovi} nuove email` : 'Nessuna nuova email', 'success')
+      showToast(
+        data.nuovi > 0 || data.aggiornati > 0
+          ? `✓ ${data.nuovi} nuove, ${data.aggiornati} aggiornate`
+          : 'Nessuna novità',
+        'success'
+      )
       await load()
     } catch (e) {
       showToast('Errore: ' + e.message, 'error')
