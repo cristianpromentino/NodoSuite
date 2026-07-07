@@ -451,6 +451,46 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 .verbale-tab-panel th, .verbale-tab-panel td { padding: clamp(4px, 0.6vw, 12px) clamp(6px, 0.9vw, 16px); }
 .verbale-tab-panel .form-card { padding: clamp(12px, 1.4vw, 20px); }
 
+/* INBOX — layout a due colonne (stesso schema di Verbali) */
+.inbox-shell {
+  display: flex; gap: 20px;
+  height: calc(100vh - 56px);
+  margin: -28px -32px; padding: 28px 32px;
+  box-sizing: border-box; overflow-x: hidden;
+}
+.inbox-sidebar {
+  width: 340px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card);
+  padding: 16px; box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.inbox-sidebar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.inbox-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.inbox-item { padding: 10px 12px; border-radius: var(--r); cursor: pointer; border-left: 3px solid transparent; }
+.inbox-item:hover { background: var(--paper); }
+.inbox-item.active { background: var(--primary-light); }
+.inbox-item.unread { border-left-color: var(--primary); }
+.inbox-item.unread .inbox-item-from, .inbox-item.unread .inbox-item-subject { font-weight: 700; }
+.inbox-item-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.inbox-item-from { font-size: 12px; color: var(--ink); font-weight: 500; }
+.inbox-item-date { font-size: 10px; color: var(--fog); font-family: ui-monospace, monospace; flex-shrink: 0; }
+.inbox-item-subject { font-size: 13px; color: var(--ink); margin-bottom: 2px; }
+.inbox-item-snippet { font-size: 11px; color: var(--fog); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.inbox-content {
+  flex: 1; min-width: 0; box-sizing: border-box; overflow-x: hidden;
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card);
+  padding: 28px; box-shadow: var(--shadow); overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .inbox-shell { flex-direction: column; height: auto; margin: -16px; padding: 16px 16px 84px; }
+  .inbox-sidebar { width: 100%; }
+  .inbox-shell.has-selection .inbox-sidebar { display: none; }
+  .inbox-content { padding: 18px; }
+}
+
 /* LOG */
 .log-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .log-item { border-left: 3px solid var(--line); padding: 8px 12px; }
