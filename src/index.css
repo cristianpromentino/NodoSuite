@@ -471,6 +471,19 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 }
 .inbox-sidebar-header-actions { display: flex; gap: 6px; }
 .inbox-sidebar-header-actions button { flex: 1; }
+
+.inbox-folders { display: flex; gap: 4px; margin-bottom: 12px; }
+.inbox-folder-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 8px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r);
+  font-size: 12px; font-weight: 500; color: var(--slate); cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+.inbox-folder-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+.inbox-folder-count {
+  background: rgba(255,255,255,.25); border-radius: 10px; padding: 1px 6px; font-size: 10px;
+}
+.inbox-folder-btn:not(.active) .inbox-folder-count { background: var(--line); color: var(--slate); }
 .inbox-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
 .inbox-item { padding: 10px 12px; border-radius: var(--r); cursor: pointer; border-left: 3px solid transparent; }
 .inbox-item:hover { background: var(--paper); }
