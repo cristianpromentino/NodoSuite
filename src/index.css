@@ -459,7 +459,7 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
   box-sizing: border-box; overflow-x: hidden;
 }
 .inbox-sidebar {
-  width: 340px; flex-shrink: 0;
+  width: 340px; flex-shrink: 0; min-width: 0;
   display: flex; flex-direction: column;
   background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card);
   padding: 16px; box-shadow: var(--shadow);
@@ -502,8 +502,8 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
   flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 10px;
   border-bottom: 1px solid var(--line);
 }
-.inbox-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
-.inbox-item { padding: 10px 12px; border-radius: var(--r); cursor: pointer; border-left: 3px solid transparent; }
+.inbox-list { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; gap: 4px; }
+.inbox-item { min-width: 0; padding: 10px 12px; border-radius: var(--r); cursor: pointer; border-left: 3px solid transparent; }
 .inbox-item:hover { background: var(--paper); }
 .inbox-item.active { background: var(--primary-light); }
 .inbox-item.unread { border-left-color: var(--primary); }
@@ -514,7 +514,10 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
 }
 .inbox-item-date { font-size: 10px; color: var(--fog); font-family: ui-monospace, monospace; flex-shrink: 0; }
-.inbox-item-subject { font-size: 13px; color: var(--ink); margin-bottom: 2px; }
+.inbox-item-subject {
+  font-size: 13px; color: var(--ink); margin-bottom: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .inbox-item-snippet { font-size: 11px; color: var(--fog); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .inbox-content {
