@@ -8,6 +8,7 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const REDIRECT_URI = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-oauth-callback'
 const SYNC_FUNCTION_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-sync'
 const MARK_READ_FUNCTION_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-mark-read'
+const SEND_REPLY_FUNCTION_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-send-reply'
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
@@ -21,6 +22,9 @@ export default function Inbox() {
   const [current, setCurrent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [showReply, setShowReply] = useState(false)
+  const [replyText, setReplyText] = useState('')
+  const [sending, setSending] = useState(false)
 
   useEffect(() => {
     load()
@@ -111,7 +115,37 @@ export default function Inbox() {
 
   function apriMessaggio(m) {
     setCurrent(m)
+    setShowReply(false)
+    setReplyText('')
     if (!m.is_read) segnaLetta(m.id, true)
+  }
+
+  async function inviaRisposta() {
+    if (!replyText.trim()) { showToast('Scrivi un testo prima di inviare', 'error'); return }
+    setSending(true)
+    try {
+      const res = await fetch(SEND_REPLY_FUNCTION_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalMessageId: current.id,
+          threadId: current.thread_id,
+          to: current.from_address,
+          subject: current.subject,
+          bodyText: replyText.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore invio')
+      showToast('Risposta inviata ✓', 'success')
+      setMessages(list => list.map(x => x.id === current.id ? { ...x, is_replied: true } : x))
+      setCurrent(c => ({ ...c, is_replied: true }))
+      setShowReply(false)
+      setReplyText('')
+    } catch (e) {
+      showToast('Errore: ' + e.message, 'error')
+    }
+    setSending(false)
   }
 
   if (loading) {
@@ -212,13 +246,37 @@ export default function Inbox() {
               </div>
             )}
 
-            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--line)', display: 'flex', gap: 10 }}>
-              <button className="btn btn-primary" onClick={() => showToast('La risposta diretta arriva nella prossima fase', 'info')}>
-                ← Rispondi
-              </button>
-              <button className="btn btn-outline" onClick={() => segnaLetta(current.id, false)}>
-                Segna come non letta
-              </button>
+            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+              {current.is_replied && (
+                <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon icon={UTILITY_ICONS.successo} size="sm" color="var(--success)" /> Hai già risposto a questa email
+                </div>
+              )}
+
+              {!showReply ? (
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button className="btn btn-primary" onClick={() => setShowReply(true)}>← Rispondi</button>
+                  <button className="btn btn-outline" onClick={() => segnaLetta(current.id, false)}>
+                    Segna come non letta
+                  </button>
+                </div>
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">Rispondi a {current.from_name || current.from_address}</label>
+                  <textarea
+                    className="form-textarea" style={{ minHeight: 140 }}
+                    value={replyText} onChange={e => setReplyText(e.target.value)}
+                    placeholder="Scrivi la tua risposta..."
+                    autoFocus
+                  />
+                  <div className="form-actions">
+                    <button className="btn btn-outline" onClick={() => { setShowReply(false); setReplyText('') }} disabled={sending}>Annulla</button>
+                    <button className="btn btn-primary" onClick={inviaRisposta} disabled={sending}>
+                      {sending ? 'Invio...' : 'Invia risposta →'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
