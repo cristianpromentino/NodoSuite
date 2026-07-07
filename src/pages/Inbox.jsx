@@ -7,6 +7,7 @@ import { NAV_ICONS, UTILITY_ICONS, ACTION_ICONS } from '../components/icons-map'
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const REDIRECT_URI = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-oauth-callback'
 const SYNC_FUNCTION_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-sync'
+const MARK_READ_FUNCTION_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-mark-read'
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
@@ -87,12 +88,29 @@ export default function Inbox() {
     setSyncing(false)
   }
 
-  async function apriMessaggio(m) {
-    setCurrent(m)
-    if (!m.is_read) {
-      setMessages(list => list.map(x => x.id === m.id ? { ...x, is_read: true } : x))
-      await supabase.from('inbox_messages').update({ is_read: true }).eq('id', m.id)
+  async function segnaLetta(messageId, letta) {
+    // Aggiornamento ottimistico dell'interfaccia, poi conferma da Gmail
+    setMessages(list => list.map(x => x.id === messageId ? { ...x, is_read: letta } : x))
+    setCurrent(c => (c && c.id === messageId) ? { ...c, is_read: letta } : c)
+    try {
+      const res = await fetch(MARK_READ_FUNCTION_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, read: letta }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore aggiornamento')
+    } catch (e) {
+      showToast('Errore: ' + e.message, 'error')
+      // ripristina lo stato precedente in caso di errore
+      setMessages(list => list.map(x => x.id === messageId ? { ...x, is_read: !letta } : x))
+      setCurrent(c => (c && c.id === messageId) ? { ...c, is_read: !letta } : c)
     }
+  }
+
+  function apriMessaggio(m) {
+    setCurrent(m)
+    if (!m.is_read) segnaLetta(m.id, true)
   }
 
   if (loading) {
@@ -190,9 +208,12 @@ export default function Inbox() {
               </div>
             )}
 
-            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--line)', display: 'flex', gap: 10 }}>
               <button className="btn btn-primary" onClick={() => showToast('La risposta diretta arriva nella prossima fase', 'info')}>
                 ← Rispondi
+              </button>
+              <button className="btn btn-outline" onClick={() => segnaLetta(current.id, false)}>
+                Segna come non letta
               </button>
             </div>
           </div>
