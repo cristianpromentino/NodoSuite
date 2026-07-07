@@ -35,6 +35,7 @@ export default function Inbox() {
   const [syncing, setSyncing] = useState(false)
   const [showReply, setShowReply] = useState(false)
   const [sending, setSending] = useState(false)
+  const [threadMessages, setThreadMessages] = useState([])
 
   useEffect(() => {
     load()
@@ -126,11 +127,23 @@ export default function Inbox() {
     }
   }
 
-  function apriMessaggio(m) {
-    setCurrent(m)
+  async function apriMessaggio(m) {
     setCurrentDraft(null)
     setShowReply(false)
-    if (!m.is_read) segnaLetta(m.id, true)
+
+    const { data: thread } = await supabase
+      .from('inbox_messages')
+      .select('*')
+      .eq('thread_id', m.thread_id)
+      .order('received_at', { ascending: true })
+    const lista = thread && thread.length > 0 ? thread : [m]
+    setThreadMessages(lista)
+
+    // Rispondiamo sempre all'ultimo messaggio della conversazione, non a quello cliccato in lista
+    const ultimo = lista[lista.length - 1]
+    setCurrent(ultimo)
+
+    lista.filter(x => !x.is_read).forEach(x => segnaLetta(x.id, true))
   }
 
   function apriBozza(b) {
@@ -351,29 +364,37 @@ export default function Inbox() {
                 </div>
               )}
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 8, marginBottom: 18, paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{current.from_name || current.from_address}</div>
-                <div style={{ fontSize: 11, color: 'var(--fog)' }}>{current.from_address} · a {current.to_address}</div>
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--fog)', fontFamily: 'ui-monospace, monospace' }}>
-                {current.received_at ? new Date(current.received_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
-              </div>
-            </div>
-
-            {current.body_html ? (
-              <iframe
-                title="Contenuto email"
-                srcDoc={current.body_html}
-                sandbox=""
-                style={{ width: '100%', minHeight: 400, border: 'none', background: '#fff' }}
-              />
-            ) : (
-              <div style={{ fontSize: 13, lineHeight: 1.7, whiteSpace: 'pre-wrap', color: 'var(--ink2)' }}>
-                {current.body_text || current.snippet || '(nessun contenuto)'}
-              </div>
+            {threadMessages.length > 1 && (
+              <div style={{ fontSize: 12, color: 'var(--fog)', marginTop: 4 }}>{threadMessages.length} messaggi in questa conversazione</div>
             )}
+
+            <div className="inbox-thread">
+              {threadMessages.map((msg, i) => (
+                <div key={msg.id} className="inbox-thread-message">
+                  <div className="inbox-thread-message-header">
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{msg.from_name || msg.from_address}</div>
+                      <div style={{ fontSize: 11, color: 'var(--fog)' }}>{msg.from_address} · a {msg.to_address}</div>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--fog)', fontFamily: 'ui-monospace, monospace' }}>
+                      {msg.received_at ? new Date(msg.received_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                    </div>
+                  </div>
+                  {msg.body_html ? (
+                    <iframe
+                      title={`Messaggio ${i + 1}`}
+                      srcDoc={msg.body_html}
+                      sandbox=""
+                      style={{ width: '100%', minHeight: 220, border: 'none', background: '#fff' }}
+                    />
+                  ) : (
+                    <div style={{ fontSize: 13, lineHeight: 1.7, whiteSpace: 'pre-wrap', color: 'var(--ink2)' }}>
+                      {msg.body_text || msg.snippet || '(nessun contenuto)'}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
 
             {folder !== 'inviata' && (
               <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
