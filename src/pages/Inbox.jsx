@@ -307,7 +307,8 @@ export default function Inbox() {
         <div className="inbox-folders">
           {FOLDERS.map(f => {
             const n = conteggi[f.key]
-            const badge = f.key === 'ricevute' && conteggi.ricevuteNonLette > 0 ? conteggi.ricevuteNonLette : n
+            const isUnread = f.key === 'ricevute' && conteggi.ricevuteNonLette > 0
+            const badge = isUnread ? conteggi.ricevuteNonLette : n
             return (
               <button
                 key={f.key}
@@ -315,7 +316,9 @@ export default function Inbox() {
                 onClick={() => { setFolder(f.key); setSearch('') }}
               >
                 {f.label}
-                {badge > 0 && <span className="inbox-folder-count">{badge}</span>}
+                {badge > 0 && (
+                  <span className={`inbox-folder-count ${isUnread ? 'inbox-folder-count-unread' : ''}`}>{badge}</span>
+                )}
               </button>
             )
           })}
