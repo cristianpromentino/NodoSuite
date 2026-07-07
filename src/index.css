@@ -472,12 +472,16 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 .inbox-sidebar-header-actions { display: flex; gap: 6px; }
 .inbox-sidebar-header-actions button { flex: 1; }
 
-.inbox-folders { display: flex; gap: 4px; margin-bottom: 12px; }
+.inbox-folders { display: flex; gap: 4px; margin-bottom: 12px; min-width: 0; }
 .inbox-folder-btn {
-  flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+  flex: 1; min-width: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
   padding: 7px 4px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r);
   font-size: clamp(10px, 2.6vw, 12px); font-weight: 500; color: var(--slate); cursor: pointer;
-  font-family: 'Inter', sans-serif; white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+}
+.inbox-folder-btn span:not(.inbox-folder-count) {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
 }
 .inbox-folder-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
 .inbox-folder-count {
