@@ -377,8 +377,8 @@ export default function Inbox() {
           <div>
             <button className="btn btn-outline btn-sm verbali-back-mobile" onClick={() => setCurrent(null)}>← Elenco email</button>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-              <div className="page-title" style={{ fontSize: 18 }}>{current.subject}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
+              <div className="page-title" style={{ fontSize: 18, wordBreak: 'break-word' }}>{current.subject}</div>
               {folder === 'cestino' ? (
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   <button className="btn btn-outline btn-sm" onClick={() => archiviaOElimina(current.id, 'restore')}>Ripristina</button>
