@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import Icon from '../components/Icon'
 import { NAV_ICONS, UTILITY_ICONS, ACTION_ICONS } from '../components/icons-map'
+import ComposeBox from '../components/ComposeBox'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
 const REDIRECT_URI = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-oauth-callback'
@@ -23,7 +24,6 @@ export default function Inbox() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [showReply, setShowReply] = useState(false)
-  const [replyText, setReplyText] = useState('')
   const [sending, setSending] = useState(false)
 
   useEffect(() => {
@@ -121,12 +121,11 @@ export default function Inbox() {
   function apriMessaggio(m) {
     setCurrent(m)
     setShowReply(false)
-    setReplyText('')
     if (!m.is_read) segnaLetta(m.id, true)
   }
 
-  async function inviaRisposta() {
-    if (!replyText.trim()) { showToast('Scrivi un testo prima di inviare', 'error'); return }
+  async function inviaRisposta(payload) {
+    if (!payload.to.trim()) { showToast('Inserisci almeno un destinatario', 'error'); return }
     setSending(true)
     try {
       const res = await fetch(SEND_REPLY_FUNCTION_URL, {
@@ -135,18 +134,16 @@ export default function Inbox() {
         body: JSON.stringify({
           originalMessageId: current.id,
           threadId: current.thread_id,
-          to: current.from_address,
-          subject: current.subject,
-          bodyText: replyText.trim(),
+          ...payload,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore invio')
-      showToast('Risposta inviata ✓', 'success')
+      showToast('Risposta inviata ✓', data.warning ? 'info' : 'success')
+      if (data.warning) showToast(data.warning, 'info')
       setMessages(list => list.map(x => x.id === current.id ? { ...x, is_replied: true } : x))
       setCurrent(c => ({ ...c, is_replied: true }))
       setShowReply(false)
-      setReplyText('')
     } catch (e) {
       showToast('Errore: ' + e.message, 'error')
     }
@@ -266,21 +263,14 @@ export default function Inbox() {
                   </button>
                 </div>
               ) : (
-                <div className="form-group">
-                  <label className="form-label">Rispondi a {current.from_name || current.from_address}</label>
-                  <textarea
-                    className="form-textarea" style={{ minHeight: 140 }}
-                    value={replyText} onChange={e => setReplyText(e.target.value)}
-                    placeholder="Scrivi la tua risposta..."
-                    autoFocus
-                  />
-                  <div className="form-actions">
-                    <button className="btn btn-outline" onClick={() => { setShowReply(false); setReplyText('') }} disabled={sending}>Annulla</button>
-                    <button className="btn btn-primary" onClick={inviaRisposta} disabled={sending}>
-                      {sending ? 'Invio...' : 'Invia risposta →'}
-                    </button>
-                  </div>
-                </div>
+                <ComposeBox
+                  key={current.id}
+                  defaultTo={current.from_address}
+                  defaultSubject={current.subject}
+                  onSend={inviaRisposta}
+                  onCancel={() => setShowReply(false)}
+                  sending={sending}
+                />
               )}
             </div>
           </div>
