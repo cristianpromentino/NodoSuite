@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import Icon from '../components/Icon'
 import { ACTION_ICONS, UTILITY_ICONS } from '../components/icons-map'
+import ComposeBox from '../components/ComposeBox'
 
 const STATO_LABEL = { in_attesa: 'In attesa', in_corso: 'In corso', completato: 'Completato', bloccato: 'Bloccato' }
 const ORIGINE_LABEL = { verbale: 'Verbale assemblea', diretto: 'Diretto', segnalazione: 'Segnalazione' }
@@ -25,6 +26,8 @@ export default function IncaricoDetail() {
   const [form, setForm] = useState({})
   const [waText, setWaText] = useState('')
   const [showWa, setShowWa] = useState(false)
+  const [showEmail, setShowEmail] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   useEffect(() => { if (selectedId) loadAll() }, [selectedId])
 
@@ -112,6 +115,26 @@ export default function IncaricoDetail() {
     navigate('incarichi')
   }
 
+  async function inviaEmailFornitore(payload) {
+    if (!payload.to.trim()) { showToast('Inserisci un destinatario', 'error'); return }
+    setSendingEmail(true)
+    try {
+      const res = await fetch('https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-send-new', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, incaricoId: selectedId, autoreId: profilo?.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore invio')
+      showToast('Email inviata ✓', 'success')
+      setShowEmail(false)
+      loadAll()
+    } catch (e) {
+      showToast('Errore: ' + e.message, 'error')
+    }
+    setSendingEmail(false)
+  }
+
   function setField(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
   if (!incarico) return <div style={{ padding: 40, color: 'var(--fog)' }}>Caricamento...</div>
@@ -130,7 +153,7 @@ export default function IncaricoDetail() {
           {fornitoreCorrente?.telefono_whatsapp && (
             <button className="btn btn-whatsapp" onClick={() => setShowWa(true)}><Icon icon={UTILITY_ICONS.whatsapp} size="sm" /> WhatsApp</button>
           )}
-          <button className="btn btn-outline" onClick={() => showToast('Funzionalità email in arrivo', 'info')} title="Invio email — funzionalità in configurazione"><Icon icon={UTILITY_ICONS.email} size="sm" /> Email</button>
+          <button className="btn btn-outline" onClick={() => setShowEmail(true)}><Icon icon={UTILITY_ICONS.email} size="sm" /> Email</button>
           {!editando && <button className="btn btn-outline" onClick={() => setEditando(true)}><Icon icon={ACTION_ICONS.modifica} size="sm" /> Modifica</button>}
           {isAdmin() && <button className="btn btn-danger" onClick={eliminaIncarico}><Icon icon={ACTION_ICONS.elimina} size="sm" /> Elimina</button>}
         </div>
@@ -294,6 +317,24 @@ export default function IncaricoDetail() {
               <button className="btn btn-outline" onClick={() => setShowWa(false)}>Annulla</button>
               <button className="btn btn-whatsapp" onClick={() => { apriWhatsapp(); setShowWa(false) }}>Apri WhatsApp →</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showEmail && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowEmail(false)}>
+          <div className="modal" style={{ width: 'min(640px, 96vw)' }}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon icon={UTILITY_ICONS.email} size="sm" /> Email al fornitore</div>
+              <button className="modal-close" onClick={() => setShowEmail(false)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
+            </div>
+            <ComposeBox
+              defaultTo={fornitoreCorrente?.email || ''}
+              defaultSubject={`Incarico — ${incarico.edifici?.nome || ''}`}
+              onSend={inviaEmailFornitore}
+              onCancel={() => setShowEmail(false)}
+              sending={sendingEmail}
+            />
           </div>
         </div>
       )}
