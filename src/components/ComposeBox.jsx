@@ -25,11 +25,16 @@ export default function ComposeBox({
   useEffect(() => {
     if (!initializedRef.current && editorRef.current) {
       initializedRef.current = true
+      const firmaHtml = signature
+        ? `<br><br><div style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px;">${signature}</div>`
+        : ''
       if (defaultBodyHtml) {
-        // Riprendiamo una bozza esistente: contenuto già presente, firma già inclusa
-        editorRef.current.innerHTML = defaultBodyHtml
+        // Testo suggerito (es. da un incarico) o bozza ripresa: la firma si aggiunge comunque sotto,
+        // a meno che il testo non la contenga già (caso tipico delle bozze salvate in precedenza)
+        const contieneGiaFirma = signature && defaultBodyHtml.includes(signature)
+        editorRef.current.innerHTML = defaultBodyHtml + (contieneGiaFirma ? '' : firmaHtml)
       } else if (signature) {
-        editorRef.current.innerHTML = `<br><br><div style="color:#6b7280;font-size:12px;border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px;">${signature}</div>`
+        editorRef.current.innerHTML = firmaHtml
       }
       editorRef.current.focus()
       const range = document.createRange()
