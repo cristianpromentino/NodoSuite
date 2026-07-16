@@ -455,7 +455,6 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 .inbox-shell {
   display: flex; gap: 20px;
   height: calc(100vh - 56px);
-  margin: -28px -32px; padding: 28px 32px;
   box-sizing: border-box; overflow-x: hidden;
 }
 .inbox-sidebar {
@@ -471,6 +470,11 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 }
 .inbox-sidebar-header-actions { display: flex; gap: 6px; }
 .inbox-sidebar-header-actions button { flex: 1; }
+.inbox-expired-banner {
+  background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;
+  border-radius: var(--r); padding: 10px 12px; font-size: 12px; line-height: 1.5;
+  margin-bottom: 12px;
+}
 
 .inbox-folders { display: flex; gap: 4px; margin-bottom: 12px; min-width: 0; }
 .inbox-folder-btn {
@@ -531,7 +535,7 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 }
 
 @media (max-width: 768px) {
-  .inbox-shell { flex-direction: column; height: auto; margin: -16px; padding: 16px 16px 84px; }
+  .inbox-shell { flex-direction: column; height: auto; }
   .inbox-sidebar { width: 100%; }
   .inbox-shell.has-selection .inbox-sidebar { display: none; }
   .inbox-content { padding: 18px; }
