@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../App'
 import Icon from '../components/Icon'
-import { NAV_ICONS, ACTION_ICONS } from '../components/icons-map'
+import { NAV_ICONS, ACTION_ICONS, UTILITY_ICONS } from '../components/icons-map'
 
 const PRIORITA_LABEL = { bassa: 'Bassa', media: 'Media', alta: 'Alta', urgente: 'Urgente' }
 const STATO_LABEL = { da_fare: 'Da fare', in_corso: 'In corso', bloccato: 'Bloccato', completato: 'Completato' }
@@ -18,6 +18,8 @@ export default function TaskDetail() {
   const [edifici, setEdifici] = useState([])
   const [persone, setPersone] = useState([])
   const [nuovaNota, setNuovaNota] = useState('')
+  const [allegati, setAllegati] = useState([])
+  const [caricandoAllegato, setCaricandoAllegato] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { loadAll() }, [selectedId])
@@ -36,16 +38,18 @@ export default function TaskDetail() {
 
   async function loadAll() {
     setLoading(true)
-    const [{ data: t }, { data: prof }, { data: ass }, { data: lg }] = await Promise.all([
+    const [{ data: t }, { data: prof }, { data: ass }, { data: lg }, { data: alg }] = await Promise.all([
       supabase.from('attivita_interne').select('*, edifici(id,nome), incarichi(id,descrizione), verbali(id,titolo), condòmini(id,nome_completo)').eq('id', selectedId).single(),
       supabase.from('profili').select('id, nome_completo').order('nome_completo'),
       supabase.from('attivita_assegnatari').select('*, profili(id,nome_completo)').eq('attivita_id', selectedId),
       supabase.from('attivita_log').select('*, profili(nome_completo)').eq('attivita_id', selectedId).order('created_at', { ascending: false }),
+      supabase.from('attivita_allegati').select('*').eq('attivita_id', selectedId).order('created_at', { ascending: false }),
     ])
     setTask(t)
     setProfili(prof || [])
     setAssegnatari(ass || [])
     setLog(lg || [])
+    setAllegati(alg || [])
     if (t) {
       setForm({
         titolo: t.titolo, descrizione: t.descrizione || '', priorita: t.priorita, area: t.area || '',
@@ -93,6 +97,33 @@ export default function TaskDetail() {
     loadAll()
   }
 
+  async function caricaAllegato(file) {
+    if (!file) return
+    setCaricandoAllegato(true)
+    const path = `${selectedId}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+    const { error: upErr } = await supabase.storage.from('task-allegati').upload(path, file)
+    if (upErr) { showToast('Errore caricamento: ' + upErr.message, 'error'); setCaricandoAllegato(false); return }
+    await supabase.from('attivita_allegati').insert({
+      attivita_id: selectedId, filename: file.name, mime_type: file.type, size_bytes: file.size,
+      storage_path: path, caricato_da: profilo?.id,
+    })
+    setCaricandoAllegato(false)
+    loadAll()
+  }
+
+  async function scaricaAllegato(att) {
+    const { data, error } = await supabase.storage.from('task-allegati').createSignedUrl(att.storage_path, 300)
+    if (error || !data) { showToast('Errore nel recupero del file', 'error'); return }
+    window.open(data.signedUrl, '_blank')
+  }
+
+  async function eliminaAllegato(att) {
+    if (!confirm(`Eliminare "${att.filename}"?`)) return
+    await supabase.storage.from('task-allegati').remove([att.storage_path])
+    await supabase.from('attivita_allegati').delete().eq('id', att.id)
+    loadAll()
+  }
+
   if (loading || !task) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--fog)' }}>Caricamento...</div>
 
   return (
@@ -110,6 +141,11 @@ export default function TaskDetail() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          {task.origine_message_id && (
+            <button className="btn btn-outline" onClick={() => navigate('inbox', task.origine_message_id)}>
+              <Icon icon={NAV_ICONS.inbox} size="sm" /> Vai all'email di origine
+            </button>
+          )}
           {!editing && <button className="btn btn-outline" onClick={() => setEditing(true)}>Modifica</button>}
           {isAdmin() && <button className="btn btn-danger" onClick={elimina}>Elimina</button>}
         </div>
@@ -200,6 +236,30 @@ export default function TaskDetail() {
             )
           })}
         </div>
+      </div>
+
+      <div className="form-card" style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div className="form-label" style={{ marginBottom: 0 }}>Allegati</div>
+          <button className="btn btn-outline btn-sm" onClick={() => document.getElementById('task-file-input').click()} disabled={caricandoAllegato}>
+            <Icon icon={UTILITY_ICONS.allegato} size="sm" /> {caricandoAllegato ? 'Caricamento...' : 'Allega file'}
+          </button>
+          <input id="task-file-input" type="file" style={{ display: 'none' }} onChange={e => caricaAllegato(e.target.files[0])} />
+        </div>
+        {allegati.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--fog)' }}>Nessun allegato.</div>
+        ) : (
+          <div className="compose-attachments">
+            {allegati.map(att => (
+              <div key={att.id} className="compose-attachment-chip">
+                <span style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => scaricaAllegato(att)}>
+                  <Icon icon={UTILITY_ICONS.allegato} size="sm" /> {att.filename} <span style={{ color: 'var(--fog)' }}>({Math.round((att.size_bytes || 0) / 1024)} KB)</span>
+                </span>
+                <button onClick={() => eliminaAllegato(att)}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="form-card">

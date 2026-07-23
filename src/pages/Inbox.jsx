@@ -25,7 +25,7 @@ const FOLDERS = [
 ]
 
 export default function Inbox() {
-  const { showToast, profilo } = useApp()
+  const { showToast, profilo, selectedId } = useApp()
   const [connection, setConnection] = useState(null)
   const [messages, setMessages] = useState([])
   const [drafts, setDrafts] = useState([])
@@ -54,6 +54,25 @@ export default function Inbox() {
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])
+
+  // Se si arriva da un task creato da un'email ("Vai all'email di origine"),
+  // apre direttamente quel messaggio specifico, nella cartella giusta.
+  useEffect(() => {
+    if (selectedId && connection) apriMessaggioPerId(selectedId)
+  }, [selectedId, connection])
+
+  async function apriMessaggioPerId(id) {
+    let msg = messages.find(m => m.id === id)
+    if (!msg) {
+      const { data } = await supabase.from('inbox_messages').select('*').eq('id', id).maybeSingle()
+      msg = data
+    }
+    if (!msg) { showToast('Email non trovata (potrebbe essere stata rimossa)', 'error'); return }
+    if ((msg.labels || []).includes('TRASH')) setFolder('cestino')
+    else if ((msg.labels || []).includes('SENT')) setFolder('inviata')
+    else setFolder('ricevute')
+    apriMessaggio(msg)
+  }
 
   async function load() {
     setLoading(true)
