@@ -602,6 +602,14 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
   background: var(--paper); padding: 24px; box-sizing: border-box;
 }
 
+.task-assegnatari-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.task-assegnatario-chip {
+  padding: 7px 14px; border-radius: var(--radius-pill); border: 1px solid var(--line);
+  background: var(--paper); font-size: 12px; color: var(--slate); cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+.task-assegnatario-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+
 /* LOG */
 .log-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .log-item { border-left: 3px solid var(--line); padding: 8px 12px; }

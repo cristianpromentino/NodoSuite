@@ -5,6 +5,8 @@ import GmailRecovery from './pages/GmailRecovery'
 import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Incarichi from './pages/Incarichi'
+import Task from './pages/Task'
+import TaskDetail from './pages/TaskDetail'
 import Verbali from './pages/Verbali'
 import IncaricoDetail from './pages/IncaricoDetail'
 import Fornitori from './pages/Fornitori'
@@ -131,6 +133,8 @@ export default function App() {
         <main className="main-content">
           {page === 'dashboard'   && <Dashboard />}
           {page === 'incarichi'   && <Incarichi />}
+          {page === 'task'           && <Task />}
+          {page === 'task-dettaglio' && <TaskDetail />}
           {page === 'verbali'     && <Verbali />}
           {page === 'dettaglio'   && <IncaricoDetail />}
           {page === 'fornitori'   && <Fornitori />}
