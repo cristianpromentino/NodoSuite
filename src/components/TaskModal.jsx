@@ -17,6 +17,7 @@ export default function TaskModal({ profili, defaultTitolo, defaultDescrizione, 
   const [edificioId, setEdificioId] = useState('')
   const [persone, setPersone] = useState([])
   const [personaRiferimentoId, setPersonaRiferimentoId] = useState('')
+  const [fileSelezionati, setFileSelezionati] = useState([])
 
   useEffect(() => {
     supabase.from('edifici').select('id, nome').eq('stato', 'attivo').order('nome').then(({ data }) => setEdifici(data || []))
@@ -41,6 +42,7 @@ export default function TaskModal({ profili, defaultTitolo, defaultDescrizione, 
       edificio_id: edificioId || null,
       persona_riferimento_id: personaRiferimentoId || null,
       origine_message_id: origineMessageId || null,
+      files: fileSelezionati,
     })
   }
 
@@ -117,6 +119,27 @@ export default function TaskModal({ profili, defaultTitolo, defaultDescrizione, 
               </label>
             ))}
           </div>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Allegati</label>
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => document.getElementById('task-modal-file-input').click()}>
+            📎 Allega file
+          </button>
+          <input
+            id="task-modal-file-input" type="file" multiple style={{ display: 'none' }}
+            onChange={e => setFileSelezionati(f => [...f, ...Array.from(e.target.files)])}
+          />
+          {fileSelezionati.length > 0 && (
+            <div className="compose-attachments" style={{ marginTop: 8 }}>
+              {fileSelezionati.map((f, i) => (
+                <div key={i} className="compose-attachment-chip">
+                  <span>{f.name} <span style={{ color: 'var(--fog)' }}>({Math.round(f.size / 1024)} KB)</span></span>
+                  <button onClick={() => setFileSelezionati(fs => fs.filter((_, idx) => idx !== i))}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="form-actions">
