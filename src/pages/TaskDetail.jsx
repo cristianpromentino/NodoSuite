@@ -30,7 +30,7 @@ export default function TaskDetail() {
   useEffect(() => {
     if (!editing) return
     if (!form.edificio_id) { setPersone([]); return }
-    supabase.from('condòmini').select('id, nome_completo').eq('edificio_id', form.edificio_id).order('nome_completo')
+    supabase.from('condòmini').select('id, nome_completo').eq('condominio_id', form.edificio_id).eq('stato', 'attivo').order('nome_completo')
       .then(({ data }) => setPersone(data || []))
   }, [editing, form.edificio_id])
 
@@ -136,7 +136,7 @@ export default function TaskDetail() {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label">Persona / Riferimento</label>
+                <label className="form-label">Riferimento</label>
                 <select className="form-select" value={form.persona_riferimento_id} onChange={e => setForm(f => ({ ...f, persona_riferimento_id: e.target.value }))} disabled={!form.edificio_id}>
                   <option value="">{form.edificio_id ? '— Nessuna —' : 'Scegli prima il condominio'}</option>
                   {persone.map(p => <option key={p.id} value={p.id}>{p.nome_completo}</option>)}
@@ -178,7 +178,7 @@ export default function TaskDetail() {
             <tbody>
               <tr><td style={{ width: '30%', fontWeight: 600, color: 'var(--slate)' }}>Descrizione</td><td>{task.descrizione || '—'}</td></tr>
               <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Condominio</td><td>{task.edifici?.nome || '—'}</td></tr>
-              <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Persona / Riferimento</td><td>{task.condòmini?.nome_completo || '—'}</td></tr>
+              <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Riferimento</td><td>{task.condòmini?.nome_completo || '—'}</td></tr>
               <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Priorità</td><td>{PRIORITA_LABEL[task.priorita]}</td></tr>
               <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Stato</td><td>{STATO_LABEL[task.stato]}</td></tr>
               <tr><td style={{ fontWeight: 600, color: 'var(--slate)' }}>Data inizio</td><td>{task.data_inizio ? new Date(task.data_inizio).toLocaleDateString('it-IT') : '—'}</td></tr>
