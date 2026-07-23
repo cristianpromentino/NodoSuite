@@ -27,6 +27,7 @@ import {
   SmartphoneVibration,
   MenuDots,
   Paperclip,
+  ThreeSquares,
 } from '@solar-icons/react-perf/LineDuotone';
 
 import {
@@ -40,7 +41,8 @@ export const NAV_ICONS = {
   verbali: DocumentAdd,
   persone: User,
   impostazioni: Settings,
-  incarichi: ChecklistMinimalistic,
+  incarichi: ThreeSquares,
+  task: ChecklistMinimalistic,
   dashboard: Screencast2,
   fornitori: Translation2,
   integrazioni: DownloadMinimalistic,
@@ -54,6 +56,7 @@ export const NAV_LABELS = {
   persone: 'Persone',
   impostazioni: 'Impostazioni',
   incarichi: 'Incarichi',
+  task: 'Task',
   dashboard: 'Dashboard',
   fornitori: 'Fornitori',
   integrazioni: 'Integrazioni',
