@@ -42,6 +42,7 @@ export default function App() {
 
   // Alert incarichi scaduti — controllato una sola volta per sessione di login
   const [overdueCount, setOverdueCount] = useState(0)
+  const [overdueTaskCount, setOverdueTaskCount] = useState(0)
   const [showOverdueAlert, setShowOverdueAlert] = useState(false)
   const overdueCheckedRef = useRef(false)
 
@@ -85,13 +86,15 @@ export default function App() {
 
   async function checkOverdue() {
     const oggi = new Date().toISOString().slice(0, 10)
-    const { count } = await supabase
-      .from('incarichi')
-      .select('id', { count: 'exact', head: true })
-      .lt('data_scadenza', oggi)
-      .neq('stato', 'completato')
-    if (count && count > 0) {
-      setOverdueCount(count)
+    const [{ count: countInc }, { count: countTask }] = await Promise.all([
+      supabase.from('incarichi').select('id', { count: 'exact', head: true })
+        .lt('data_scadenza', oggi).neq('stato', 'completato'),
+      supabase.from('attivita_interne').select('id', { count: 'exact', head: true })
+        .lt('data_scadenza', oggi).neq('stato', 'completato'),
+    ])
+    if ((countInc && countInc > 0) || (countTask && countTask > 0)) {
+      setOverdueCount(countInc || 0)
+      setOverdueTaskCount(countTask || 0)
       setShowOverdueAlert(true)
     }
   }
@@ -147,9 +150,11 @@ export default function App() {
       <Toast toasts={toasts} />
       {showOverdueAlert && (
         <OverdueAlertModal
-          count={overdueCount}
+          countIncarichi={overdueCount}
+          countTask={overdueTaskCount}
           onClose={() => setShowOverdueAlert(false)}
-          onGoTo={() => { navigate('incarichi'); setShowOverdueAlert(false) }}
+          onGoToIncarichi={() => { navigate('incarichi'); setShowOverdueAlert(false) }}
+          onGoToTask={() => { navigate('task'); setShowOverdueAlert(false) }}
         />
       )}
     </AppContext.Provider>
