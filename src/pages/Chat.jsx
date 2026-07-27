@@ -30,7 +30,7 @@ export default function Chat() {
       .channel('chat_pagina')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messaggi' }, async (payload) => {
         const { data: autore } = await supabase.from('profili').select('nome_completo').eq('id', payload.new.autore_id).maybeSingle()
-        setMessaggi(m => [...m, { ...payload.new, profili: autore }])
+        setMessaggi(m => m.some(x => x.id === payload.new.id) ? m : [...m, { ...payload.new, profili: autore }])
         segnaChatLetta()
       })
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
@@ -120,7 +120,6 @@ export default function Chat() {
     setTesto('')
     setFileSelezionati([])
     setInviando(false)
-    load()
     caricaStatoLettura()
   }
 
