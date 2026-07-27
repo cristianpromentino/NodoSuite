@@ -16,6 +16,7 @@ const MAIN_TABS = [
 ]
 
 const MORE_ITEMS = [
+  { route: 'chat', label: NAV_LABELS.chat, icon: NAV_ICONS.chat },
   { route: 'incarichi', label: NAV_LABELS.incarichi, icon: NAV_ICONS.incarichi },
   { route: 'verbali', label: NAV_LABELS.verbali, icon: NAV_ICONS.verbali },
   { route: 'edifici', label: NAV_LABELS.condomini, icon: NAV_ICONS.condomini },
@@ -24,7 +25,7 @@ const MORE_ITEMS = [
   { route: 'integrazioni', label: NAV_LABELS.integrazioni, icon: NAV_ICONS.integrazioni },
 ]
 
-export default function BottomNav({ page, navigate }) {
+export default function BottomNav({ page, navigate, chatUnreadCount }) {
   const [showMore, setShowMore] = useState(false)
   const isMoreActive = MORE_ITEMS.some(i => i.route === page)
 
@@ -47,6 +48,7 @@ export default function BottomNav({ page, navigate }) {
               >
                 <Icon icon={item.icon} size={22} />
                 <span>{item.label}</span>
+                {item.route === 'chat' && chatUnreadCount > 0 && <span className="nav-item-badge">{chatUnreadCount}</span>}
               </button>
             ))}
           </div>
@@ -73,6 +75,7 @@ export default function BottomNav({ page, navigate }) {
         >
           <Icon icon={UTILITY_ICONS.altro} size={20} />
           <span>Altro</span>
+          {chatUnreadCount > 0 && <span className="nav-item-badge nav-item-badge-corner">{chatUnreadCount}</span>}
         </button>
       </nav>
     </>

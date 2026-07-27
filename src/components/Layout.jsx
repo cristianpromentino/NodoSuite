@@ -10,7 +10,7 @@ const RUOLO_LABEL = {
   back_office: 'Back Office'
 }
 
-export default function Layout({ page, navigate, profilo, collapsed, onToggleSidebar }) {
+export default function Layout({ page, navigate, profilo, collapsed, onToggleSidebar, chatUnreadCount }) {
   async function logout() {
     await supabase.auth.signOut()
   }
@@ -45,6 +45,10 @@ export default function Layout({ page, navigate, profilo, collapsed, onToggleSid
           <button className={`nav-item ${page === 'task' || page === 'task-dettaglio' ? 'active' : ''}`} onClick={() => navigate('task')}>
             <Icon icon={NAV_ICONS.task} size="md" /> <span>Task</span>
           </button>
+          <button className={`nav-item ${page === 'chat' ? 'active' : ''}`} onClick={() => navigate('chat')}>
+            <Icon icon={NAV_ICONS.chat} size="md" /> <span>Chat</span>
+            {chatUnreadCount > 0 && <span className="nav-item-badge">{chatUnreadCount}</span>}
+          </button>
           <button className={`nav-item ${page === 'incarichi' || page === 'dettaglio' ? 'active' : ''}`} onClick={() => navigate('incarichi')}>
             <Icon icon={NAV_ICONS.incarichi} size="md" /> <span>Incarichi</span>
           </button>
@@ -70,7 +74,7 @@ export default function Layout({ page, navigate, profilo, collapsed, onToggleSid
           </button>
         </div>
       </div>
-      <BottomNav page={page} navigate={navigate} />
+      <BottomNav page={page} navigate={navigate} chatUnreadCount={chatUnreadCount} />
     </>
   )
 }
