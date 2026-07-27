@@ -45,6 +45,18 @@ export default function Chat() {
           })
         }, 3000)
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_stato_lettura' }, () => {
+        // Qualcuno ha aperto la chat: le spunte di lettura si aggiornano da sole, in diretta
+        caricaStatoLettura()
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_allegati' }, (payload) => {
+        // Un allegato arrivato per un messaggio di un altro: lo agganciamo subito, senza ricaricare tutto
+        setMessaggi(m => m.map(msg =>
+          msg.id === payload.new.messaggio_id
+            ? { ...msg, chat_allegati: [...(msg.chat_allegati || []), payload.new] }
+            : msg
+        ))
+      })
       .subscribe()
 
     canaleRef.current = canale
