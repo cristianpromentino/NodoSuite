@@ -11,6 +11,13 @@ const PRIORITA_COLORI = {
   alta: { background: '#fef3c7', color: '#d97706' },
   urgente: { background: '#fee2e2', color: '#dc2626' },
 }
+const TASK_STATO_LABEL = { da_fare: 'Da fare', in_corso: 'In corso', bloccato: 'Bloccato', completato: 'Completato' }
+const TASK_STATO_COLORI = {
+  da_fare: { background: '#f3f4f6', color: '#6b7280' },
+  in_corso: { background: '#e8f2f7', color: '#015578' },
+  bloccato: { background: '#fee2e2', color: '#dc2626' },
+  completato: { background: '#dcfce7', color: '#16a34a' },
+}
 
 export default function Dashboard() {
   const { navigate } = useApp()
@@ -25,7 +32,21 @@ export default function Dashboard() {
       supabase.from('incarichi').select('*, edifici(nome), fornitori(ragione_sociale)').order('created_at', { ascending: false }),
       supabase.from('attivita_interne').select('*, edifici(nome)').order('created_at', { ascending: false }).limit(5),
     ])
-    setTaskRecenti(task || [])
+
+    if (task && task.length > 0) {
+      const { data: assegnazioni } = await supabase
+        .from('attivita_assegnatari')
+        .select('attivita_id, profili(nome_completo)')
+        .in('attivita_id', task.map(t => t.id))
+      const assegnatiPerTask = {}
+      ;(assegnazioni || []).forEach(a => {
+        if (!assegnatiPerTask[a.attivita_id]) assegnatiPerTask[a.attivita_id] = []
+        assegnatiPerTask[a.attivita_id].push(a.profili?.nome_completo)
+      })
+      setTaskRecenti(task.map(t => ({ ...t, assegnatari: assegnatiPerTask[t.id] || [] })))
+    } else {
+      setTaskRecenti([])
+    }
 
     if (!data) return
     const oggi = new Date()
@@ -155,28 +176,43 @@ export default function Dashboard() {
           </div>
           {taskRecenti.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon"><Icon icon={NAV_ICONS.task} size={30} /></div>
-              <div className="empty-text">Nessun task ancora.</div>
+              <div className="empty-icon"><Icon icon={NAV_ICONS.task} size={36} /></div>
+              <div className="empty-text">Nessun task ancora. Creane uno!</div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {taskRecenti.map(t => (
-                <div
-                  key={t.id}
-                  onClick={() => navigate('task-dettaglio', t.id)}
-                  className={isTaskScaduto(t) ? 'row-scaduto' : ''}
-                  style={{ padding: '10px 4px', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}
-                >
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 3 }}>{t.titolo}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                    <span className="badge" style={PRIORITA_COLORI[t.priorita]}>{PRIORITA_LABEL[t.priorita]}</span>
-                    <span style={{ fontSize: 11, color: 'var(--fog)', fontFamily: 'ui-monospace, monospace' }}>
+            <table className="table-incarichi-dash">
+              <thead>
+                <tr>
+                  <th>Titolo</th>
+                  <th>Assegnatari</th>
+                  <th>Priorità</th>
+                  <th>Stato</th>
+                  <th>Scadenza</th>
+                </tr>
+              </thead>
+              <tbody>
+                {taskRecenti.map(t => (
+                  <tr key={t.id} className={isTaskScaduto(t) ? 'row-scaduto' : ''} onClick={() => navigate('task-dettaglio', t.id)}>
+                    <td>
+                      {t.titolo}
+                      {t.edifici?.nome && <div style={{ fontSize: 11, color: 'var(--fog)' }}>{t.edifici.nome}</div>}
+                    </td>
+                    <td style={{ fontSize: 12 }}>
+                      {t.assegnatari.length === 0 ? <span style={{ color: 'var(--fog)' }}>—</span> : t.assegnatari.join(', ')}
+                    </td>
+                    <td><span className="badge" style={PRIORITA_COLORI[t.priorita]}>{PRIORITA_LABEL[t.priorita]}</span></td>
+                    <td>
+                      {isTaskScaduto(t)
+                        ? <span className="badge badge-scaduto">Scaduto</span>
+                        : <span className="badge" style={TASK_STATO_COLORI[t.stato]}>{TASK_STATO_LABEL[t.stato]}</span>}
+                    </td>
+                    <td style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>
                       {t.data_scadenza ? new Date(t.data_scadenza).toLocaleDateString('it-IT') : '—'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </div>
