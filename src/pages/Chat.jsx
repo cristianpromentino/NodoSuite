@@ -13,11 +13,17 @@ export default function Chat() {
   const [search, setSearch] = useState('')
   const [risultatiRicerca, setRisultatiRicerca] = useState(null)
   const [fileSelezionati, setFileSelezionati] = useState([])
+  const [statoLettura, setStatoLettura] = useState([])
+  const [chiScrive, setChiScrive] = useState({})
   const listaRef = useRef(null)
   const bottomRef = useRef(null)
+  const canaleRef = useRef(null)
+  const timeoutScritturaRef = useRef(null)
+  const timeoutInvioSegnaleRef = useRef(null)
 
   useEffect(() => {
     load()
+    caricaStatoLettura()
     segnaChatLetta()
 
     const canale = supabase
@@ -27,8 +33,21 @@ export default function Chat() {
         setMessaggi(m => [...m, { ...payload.new, profili: autore }])
         segnaChatLetta()
       })
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload.profiloId === profilo?.id) return
+        setChiScrive(s => ({ ...s, [payload.profiloId]: payload.nome }))
+        clearTimeout(timeoutScritturaRef.current)
+        timeoutScritturaRef.current = setTimeout(() => {
+          setChiScrive(s => {
+            const nuovo = { ...s }
+            delete nuovo[payload.profiloId]
+            return nuovo
+          })
+        }, 3000)
+      })
       .subscribe()
 
+    canaleRef.current = canale
     return () => { supabase.removeChannel(canale) }
   }, [])
 
@@ -45,6 +64,25 @@ export default function Chat() {
       .limit(150)
     setMessaggi(data || [])
     setLoading(false)
+  }
+
+  async function caricaStatoLettura() {
+    const { data } = await supabase.from('chat_stato_lettura').select('profilo_id, ultimo_letto_at, profili(nome_completo)')
+    setStatoLettura(data || [])
+  }
+
+  function segnalaScrittura() {
+    if (!canaleRef.current || !profilo) return
+    canaleRef.current.send({
+      type: 'broadcast', event: 'typing',
+      payload: { profiloId: profilo.id, nome: profilo.nome_completo?.split(' ')[0] || 'Qualcuno' },
+    })
+  }
+
+  function handleChangeTesto(v) {
+    setTesto(v)
+    clearTimeout(timeoutInvioSegnaleRef.current)
+    timeoutInvioSegnaleRef.current = setTimeout(segnalaScrittura, 150)
   }
 
   async function inviaMessaggio() {
@@ -70,6 +108,8 @@ export default function Chat() {
     setTesto('')
     setFileSelezionati([])
     setInviando(false)
+    load()
+    caricaStatoLettura()
   }
 
   async function scaricaAllegato(att) {
@@ -101,6 +141,15 @@ export default function Chat() {
     return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })
   }
 
+  // Chi (oltre all'autore) ha già letto un messaggio, confrontando l'orario
+  // dell'ultima lettura di ciascuno con l'orario di invio del messaggio
+  function lettoDa(msg) {
+    return statoLettura
+      .filter(s => s.profilo_id !== msg.autore_id && new Date(s.ultimo_letto_at) >= new Date(msg.created_at))
+      .map(s => s.profili?.nome_completo)
+      .filter(Boolean)
+  }
+
   // Raggruppa i messaggi per giorno, per mostrare un separatore data come in una vera chat
   const gruppi = []
   let ultimoGiorno = null
@@ -112,6 +161,8 @@ export default function Chat() {
     }
     gruppi.push({ tipo: 'messaggio', msg: m })
   }
+
+  const nomiChiScrive = Object.values(chiScrive)
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--fog)' }}>Caricamento...</div>
 
@@ -161,6 +212,7 @@ export default function Chat() {
             }
             const m = g.msg
             const mio = m.autore_id === profilo?.id
+            const letti = mio ? lettoDa(m) : []
             return (
               <div key={m.id} className={`chat-bubble-row ${mio ? 'mio' : ''}`}>
                 <div className="chat-bubble">
@@ -171,12 +223,25 @@ export default function Chat() {
                       <Icon icon={UTILITY_ICONS.allegato} size="sm" /> {att.filename}
                     </button>
                   ))}
-                  <div className="chat-bubble-ora">{formattaOra(m.created_at)}</div>
+                  <div className="chat-bubble-ora">
+                    {formattaOra(m.created_at)}
+                    {mio && (
+                      <span className={`chat-spunte ${letti.length > 0 ? 'lette' : ''}`} title={letti.length > 0 ? `Letto da ${letti.join(', ')}` : 'Inviato'}>
+                        {letti.length > 0 ? '✓✓' : '✓'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             )
           })}
           <div ref={bottomRef} />
+        </div>
+      )}
+
+      {nomiChiScrive.length > 0 && (
+        <div className="chat-typing-indicator">
+          {nomiChiScrive.join(', ')} {nomiChiScrive.length === 1 ? 'sta scrivendo' : 'stanno scrivendo'}...
         </div>
       )}
 
@@ -203,7 +268,7 @@ export default function Chat() {
           className="form-input chat-textarea"
           placeholder="Scrivi un messaggio..."
           value={testo}
-          onChange={e => setTesto(e.target.value)}
+          onChange={e => handleChangeTesto(e.target.value)}
           onKeyDown={handleKey}
           rows={1}
         />
