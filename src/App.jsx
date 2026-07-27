@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Incarichi from './pages/Incarichi'
 import Task from './pages/Task'
 import TaskDetail from './pages/TaskDetail'
+import Chat from './pages/Chat'
 import Verbali from './pages/Verbali'
 import IncaricoDetail from './pages/IncaricoDetail'
 import Fornitori from './pages/Fornitori'
@@ -46,6 +47,11 @@ export default function App() {
   const [showOverdueAlert, setShowOverdueAlert] = useState(false)
   const overdueCheckedRef = useRef(false)
 
+  // Chat interna: contatore messaggi non letti, aggiornato in tempo reale
+  // ovunque ci si trovi nell'app, non solo quando la Chat è aperta.
+  const [chatUnreadCount, setChatUnreadCount] = useState(0)
+  const chatCheckedRef = useRef(false)
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -83,6 +89,50 @@ export default function App() {
       checkOverdue()
     }
   }, [profilo])
+
+  // Chat interna: calcola i non letti all'avvio, poi resta in ascolto in
+  // tempo reale per aggiornare il badge e mostrare una notifica del browser
+  // (se il permesso è stato concesso) anche mentre si è su un'altra pagina.
+  useEffect(() => {
+    if (!profilo || chatCheckedRef.current) return
+    chatCheckedRef.current = true
+
+    async function inizializzaChat() {
+      const { data: stato } = await supabase.from('chat_stato_lettura').select('ultimo_letto_at').eq('profilo_id', profilo.id).maybeSingle()
+      const ultimoLetto = stato?.ultimo_letto_at || '1970-01-01'
+      const { count } = await supabase
+        .from('chat_messaggi')
+        .select('id', { count: 'exact', head: true })
+        .gt('created_at', ultimoLetto)
+        .neq('autore_id', profilo.id)
+      setChatUnreadCount(count || 0)
+
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
+    }
+    inizializzaChat()
+
+    const canale = supabase
+      .channel('chat_globale')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messaggi' }, (payload) => {
+        const msg = payload.new
+        if (msg.autore_id === profilo.id) return
+        setChatUnreadCount(c => c + 1)
+        if ('Notification' in window && Notification.permission === 'granted' && document.hidden === false) {
+          new Notification('Nuovo messaggio in Chat', { body: msg.testo?.slice(0, 100) || 'Allegato ricevuto' })
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(canale) }
+  }, [profilo])
+
+  async function segnaChatLetta() {
+    if (!profilo) return
+    await supabase.from('chat_stato_lettura').upsert({ profilo_id: profilo.id, ultimo_letto_at: new Date().toISOString() })
+    setChatUnreadCount(0)
+  }
 
   async function checkOverdue() {
     const oggi = new Date().toISOString().slice(0, 10)
@@ -129,17 +179,18 @@ export default function App() {
 
   if (!session) return <Login />
 
-  const ctx = { session, profilo, navigate, showToast, isAdmin, selectedId }
+  const ctx = { session, profilo, navigate, showToast, isAdmin, selectedId, chatUnreadCount, segnaChatLetta }
 
   return (
     <AppContext.Provider value={ctx}>
       <div className={`app-shell ${sidebarCollapsed ? 'collapsed' : ''}`}>
-        <Layout page={page} navigate={navigate} profilo={profilo} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
+        <Layout page={page} navigate={navigate} profilo={profilo} collapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} chatUnreadCount={chatUnreadCount} />
         <main className="main-content">
           {page === 'dashboard'   && <Dashboard />}
           {page === 'incarichi'   && <Incarichi />}
           {page === 'task'           && <Task />}
           {page === 'task-dettaglio' && <TaskDetail />}
+          {page === 'chat'           && <Chat />}
           {page === 'verbali'     && <Verbali />}
           {page === 'dettaglio'   && <IncaricoDetail />}
           {page === 'fornitori'   && <Fornitori />}
