@@ -89,8 +89,10 @@ export default function App() {
     const [{ count: countInc }, { count: countTask }] = await Promise.all([
       supabase.from('incarichi').select('id', { count: 'exact', head: true })
         .lt('data_scadenza', oggi).neq('stato', 'completato'),
-      supabase.from('attivita_interne').select('id', { count: 'exact', head: true })
-        .lt('data_scadenza', oggi).neq('stato', 'completato'),
+      supabase.from('attivita_interne')
+        .select('id, attivita_assegnatari!inner(profilo_id)', { count: 'exact', head: true })
+        .lt('data_scadenza', oggi).neq('stato', 'completato')
+        .eq('attivita_assegnatari.profilo_id', profilo.id),
     ])
     if ((countInc && countInc > 0) || (countTask && countTask > 0)) {
       setOverdueCount(countInc || 0)
