@@ -5,6 +5,14 @@ const VERIFY_PASSWORD_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/
 const SEND_CODE_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/send-2fa-code'
 const VERIFY_CODE_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/verify-2fa-code'
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+const GMAIL_REDIRECT_URI = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/gmail-oauth-callback'
+const GMAIL_SCOPES = [
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.modify',
+].join(' ')
+
 export default function Login() {
   const [step, setStep] = useState('password') // 'password' | 'code' | 'recupero'
   const [email, setEmail] = useState('')
@@ -13,10 +21,13 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [recuperoInviato, setRecuperoInviato] = useState(false)
+  const [gmailScaduto, setGmailScaduto] = useState(false)
+  const [chiaveRipristino, setChiaveRipristino] = useState('')
+  const [chiaveErrata, setChiaveErrata] = useState(false)
 
   async function handleLogin() {
     if (!email || !password) { setError('Inserisci email e password'); return }
-    setLoading(true); setError('')
+    setLoading(true); setError(''); setGmailScaduto(false)
 
     try {
       // Verifica la password sul server: il browser non fa mai un login vero
@@ -40,8 +51,23 @@ export default function Login() {
       setStep('code')
     } catch (e) {
       setError(e.message)
+      if (e.message.includes('Collegamento Gmail scaduto')) setGmailScaduto(true)
     }
     setLoading(false)
+  }
+
+  function verificaChiaveERiconnetti() {
+    setChiaveErrata(false)
+    if (!GOOGLE_CLIENT_ID) { setError('Client ID Google non configurato'); return }
+    if (chiaveRipristino !== import.meta.env.VITE_RECOVERY_KEY) { setChiaveErrata(true); return }
+    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+    url.searchParams.set('client_id', GOOGLE_CLIENT_ID)
+    url.searchParams.set('redirect_uri', GMAIL_REDIRECT_URI)
+    url.searchParams.set('response_type', 'code')
+    url.searchParams.set('scope', GMAIL_SCOPES)
+    url.searchParams.set('access_type', 'offline')
+    url.searchParams.set('prompt', 'consent')
+    window.location.href = url.toString()
   }
 
   async function handleVerifyCode() {
@@ -114,6 +140,23 @@ export default function Login() {
         <img src="/NodoSuite_logo.svg" alt="NodoSuite" className="login-logo-img" />
         <div className="login-sub">Tutta la gestione condominiale. In un unico Nodo.</div>
         {error && <div className="login-error">{error}</div>}
+
+        {gmailScaduto && (
+          <div className="login-gmail-recovery">
+            <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 8 }}>
+              Inserisci la chiave di ripristino per riconnettere Gmail e sbloccare l'accesso.
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                className="form-input" type="password" placeholder="Chiave di ripristino"
+                value={chiaveRipristino} onChange={e => { setChiaveRipristino(e.target.value); setChiaveErrata(false) }}
+                onKeyDown={e => handleKey(e, verificaChiaveERiconnetti)}
+              />
+              <button className="btn btn-primary btn-sm" onClick={verificaChiaveERiconnetti}>Connetti Gmail</button>
+            </div>
+            {chiaveErrata && <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 6 }}>Chiave non corretta.</div>}
+          </div>
+        )}
 
         {mostraRecupero ? (
           <>
