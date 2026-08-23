@@ -188,10 +188,31 @@ export default function Inbox() {
     }
   }
 
+  const SCARICA_ALLEGATO_URL = 'https://etrwrxahdbrswljzrzra.supabase.co/functions/v1/scarica-allegato-email'
+
   async function scaricaAllegato(att) {
-    const { data, error } = await supabase.storage.from('inbox-attachments').createSignedUrl(att.storage_path, 300)
-    if (error || !data) { showToast('Errore nel recupero del file', 'error'); return }
-    window.open(data.signedUrl, '_blank')
+    try {
+      const res = await fetch(SCARICA_ALLEGATO_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allegatoId: att.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore nel recupero del file')
+      window.open(data.url, '_blank')
+      // Se era il primo download, segna il file come "scaricato" anche in lista
+      if (!att.storage_path) {
+        setAttachmentsByMessage(prev => {
+          const nuovo = { ...prev }
+          for (const msgId in nuovo) {
+            nuovo[msgId] = nuovo[msgId].map(a => a.id === att.id ? { ...a, storage_path: 'scaricato' } : a)
+          }
+          return nuovo
+        })
+      }
+    } catch (e) {
+      showToast('Errore: ' + e.message, 'error')
+    }
   }
 
   function apriBozza(b) {
@@ -514,8 +535,12 @@ export default function Inbox() {
                   {(attachmentsByMessage[msg.id] || []).length > 0 && (
                     <div className="compose-attachments" style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
                       {attachmentsByMessage[msg.id].map(att => (
-                        <button key={att.id} className="compose-attachment-chip" onClick={() => scaricaAllegato(att)} style={{ cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--paper)' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon icon={UTILITY_ICONS.allegato} size="sm" /> {att.filename} <span style={{ color: 'var(--fog)' }}>({Math.round((att.size_bytes || 0) / 1024)} KB)</span></span>
+                        <button key={att.id} className={`compose-attachment-chip ${!att.storage_path ? 'inbox-allegato-da-scaricare' : ''}`} onClick={() => scaricaAllegato(att)} style={{ cursor: 'pointer', border: '1px solid var(--line)', background: 'var(--paper)' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <Icon icon={UTILITY_ICONS.allegato} size="sm" />
+                            {att.filename} <span style={{ color: 'var(--fog)' }}>({Math.round((att.size_bytes || 0) / 1024)} KB)</span>
+                            {!att.storage_path && <span className="inbox-allegato-badge">scarica</span>}
+                          </span>
                         </button>
                       ))}
                     </div>
