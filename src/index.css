@@ -585,6 +585,11 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 }
 .compose-attachment-chip button { background: none; border: none; color: var(--fog); cursor: pointer; font-size: 11px; }
 .compose-attachment-chip button:hover { color: var(--danger); }
+.inbox-allegato-da-scaricare { border-style: dashed !important; }
+.inbox-allegato-badge {
+  background: var(--primary); color: #fff; font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .03em; border-radius: 999px; padding: 2px 7px; margin-left: 4px;
+}
 
 .compose-footer {
   display: flex; align-items: center; justify-content: space-between;
