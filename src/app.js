@@ -800,10 +800,12 @@ async function caricaListaRosa() {
         <button class="btn-modifica" style="flex:1;">Modifica</button>
         ${!credenzialiOk ? '<button class="btn-credenziali" style="flex:1;">Crea accesso</button>' : ''}
       </div>
+      ${!credenzialiOk ? `<button class="btn-collega-esistente" style="width:100%; margin-top:8px; padding:9px; border-radius:10px; border:1px dashed var(--line); background:none; color:#8a8474; font-size:12px; cursor:pointer;">Ha già un account? Collega invece di crearne uno nuovo</button>` : ''}
     `;
     card.querySelector('.btn-scheda')?.addEventListener('click', () => renderSchedaAtleta(persona));
     card.querySelector('.btn-modifica').addEventListener('click', () => renderFormMembro(tabella, persona));
     card.querySelector('.btn-credenziali')?.addEventListener('click', () => renderFormCredenziali(tabella, persona));
+    card.querySelector('.btn-collega-esistente')?.addEventListener('click', () => renderCollegaAccountEsistente(tabella, persona));
     lista.appendChild(card);
   });
 }
@@ -966,6 +968,64 @@ function renderFormMembro(tabella, personaEsistente = null) {
       renderRosaStaff();
     });
   }
+}
+
+// Collega un account già registrato (es. staff che è anche atleta, o viceversa)
+// invece di crearne uno nuovo: riusa lo stesso auth_user_id ed email già esistenti.
+async function renderCollegaAccountEsistente(tabella, persona) {
+  const body = document.getElementById('screen-body');
+  document.getElementById('top-title').textContent = 'Collega account esistente';
+  body.innerHTML = `<div class="content"><div class="empty-state">Caricamento...</div></div>`;
+
+  const [{ data: atletiConAccesso }, { data: staffConAccesso }] = await Promise.all([
+    supabase.from('atleti').select('id, nome, cognome, email, auth_user_id').not('auth_user_id', 'is', null),
+    supabase.from('staff').select('id, nome, cognome, email, auth_user_id').not('auth_user_id', 'is', null),
+  ]);
+
+  const candidati = [
+    ...(atletiConAccesso || []).map((p) => ({ ...p, origine: 'Atleta' })),
+    ...(staffConAccesso || []).map((p) => ({ ...p, origine: 'Staff' })),
+  ].filter((p) => p.auth_user_id); // sicurezza extra
+
+  body.innerHTML = `
+    <div class="content">
+      <button id="back-collega" style="background:none; border:none; color:var(--pitch); font-weight:700; font-size:13px; margin-bottom:14px; cursor:pointer; padding:0;">← Annulla</button>
+      <div class="card">
+        <h3>${persona.nome} ${persona.cognome}</h3>
+        <div class="time">Scegli l'account già esistente da collegare a questa scheda</div>
+      </div>
+      <div class="section-title" style="margin-top:18px;">Persone con account attivo</div>
+      <div id="lista-candidati"></div>
+      <div class="auth-error" id="collega-error" style="color:var(--danger); text-align:left; margin-top:10px;"></div>
+    </div>
+  `;
+  document.getElementById('back-collega').addEventListener('click', renderRosaStaff);
+
+  const listaEl = document.getElementById('lista-candidati');
+  if (!candidati.length) {
+    listaEl.innerHTML = `<div class="empty-state">Nessun account esistente da collegare. Crea prima un accesso da qualche parte con "Crea accesso".</div>`;
+    return;
+  }
+
+  candidati.forEach((c) => {
+    const row = document.createElement('div');
+    row.className = 'roster-row';
+    row.style.cursor = 'pointer';
+    row.innerHTML = `
+      <div>
+        <div class="roster-name">${c.nome} ${c.cognome}</div>
+        <div class="roster-sub">${c.origine}${c.email ? ' · ' + c.email : ''}</div>
+      </div>
+      <span class="tag oblig">Collega</span>
+    `;
+    row.addEventListener('click', async () => {
+      const errEl = document.getElementById('collega-error');
+      const { error } = await supabase.from(tabella).update({ auth_user_id: c.auth_user_id, email: c.email }).eq('id', persona.id);
+      if (error) { errEl.textContent = 'Errore nel collegamento: ' + error.message; return; }
+      renderRosaStaff();
+    });
+    listaEl.appendChild(row);
+  });
 }
 
 // Crea le credenziali di accesso per un atleta/staff già presente in rosa, senza
