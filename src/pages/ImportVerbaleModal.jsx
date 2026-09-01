@@ -139,6 +139,7 @@ export default function ImportVerbaleModal({ onClose, onImported }) {
           verbale_id: verbaleId, n: a.n, attivita: a.attivita, area: a.area, urgenza: a.urgenza,
           responsabile: a.responsabile || null, scadenza: a.scadenza || null,
           stato: a.stato || 'da-fare', manuale: false,
+          fornitore_suggerito: a.fornitore_suggerito || null,
         }))
       )
     }
