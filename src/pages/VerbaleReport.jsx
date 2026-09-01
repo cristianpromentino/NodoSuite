@@ -206,7 +206,11 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
       setSelectedAdemp(s => ({ ...s, incarico_id: inserted.id }))
       setAdempForm(f => ({ ...f, stato: 'in-corso' }))
     }
-    showToast('Incarico creato ✓', 'success')
+    if (ademp.fornitore_suggerito) {
+      showToast(`Incarico creato ✓ — fornitore suggerito: "${ademp.fornitore_suggerito}" (seleziona in Incarichi)`, 'success')
+    } else {
+      showToast('Incarico creato ✓', 'success')
+    }
   }
 
   function escapeHtml(str) {
@@ -284,9 +288,9 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
 
     // Foglio 7 — Adempimenti
     const wsAdemp = XLSX.utils.json_to_sheet(
-      adempimenti.map(x => ({ N: x.n, Attività: x.attivita, Area: x.area, Urgenza: x.urgenza, Responsabile: x.responsabile, Scadenza: x.scadenza, Stato: x.stato }))
+      adempimenti.map(x => ({ N: x.n, Attività: x.attivita, Area: x.area, Urgenza: x.urgenza, Responsabile: x.responsabile, Scadenza: x.scadenza, Stato: x.stato, 'Fornitore suggerito': x.fornitore_suggerito }))
     )
-    wsAdemp['!cols'] = [{ wch: 5 }, { wch: 40 }, { wch: 16 }, { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 12 }]
+    wsAdemp['!cols'] = [{ wch: 5 }, { wch: 40 }, { wch: 16 }, { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 24 }]
     XLSX.utils.book_append_sheet(wb, wsAdemp, 'Adempimenti')
 
     const filename = (verbale.titolo || 'verbale').replace(/[^a-zA-Z0-9]/g, '_') + '.xlsx'
@@ -379,9 +383,9 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
 
   <h2>Adempimenti</h2>
   <table>
-    <thead><tr><th>#</th><th>Attività</th><th>Area</th><th>Urgenza</th><th>Responsabile</th><th>Scadenza</th><th>Stato</th></tr></thead>
+    <thead><tr><th>#</th><th>Attività</th><th>Area</th><th>Urgenza</th><th>Responsabile</th><th>Scadenza</th><th>Stato</th><th>Fornitore sugg.</th></tr></thead>
     <tbody>
-      ${adempimenti.map(ad => `<tr><td>${ad.n || ''}</td><td>${escapeHtml(ad.attivita)}</td><td>${escapeHtml(ad.area)}</td><td>${escapeHtml(ad.urgenza)}</td><td>${escapeHtml(ad.responsabile) || '—'}</td><td>${escapeHtml(ad.scadenza) || '—'}</td><td><span class="badge" style="background:${statoBg[ad.stato] || '#f3f4f6'};color:${statoColor[ad.stato] || '#374151'};">${escapeHtml(STATO_LABEL[ad.stato] || ad.stato)}</span></td></tr>`).join('')}
+      ${adempimenti.map(ad => `<tr><td>${ad.n || ''}</td><td>${escapeHtml(ad.attivita)}</td><td>${escapeHtml(ad.area)}</td><td>${escapeHtml(ad.urgenza)}</td><td>${escapeHtml(ad.responsabile) || '—'}</td><td>${escapeHtml(ad.scadenza) || '—'}</td><td><span class="badge" style="background:${statoBg[ad.stato] || '#f3f4f6'};color:${statoColor[ad.stato] || '#374151'};">${escapeHtml(STATO_LABEL[ad.stato] || ad.stato)}</span></td><td>${escapeHtml(ad.fornitore_suggerito) || '—'}</td></tr>`).join('')}
     </tbody>
   </table>
 </body>
@@ -581,7 +585,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
               ) : (
                 <table className="adempimenti-table">
                   <thead>
-                    <tr><th>#</th><th>Attività</th><th>Area</th><th>Urgenza</th><th>Stato</th><th>Scadenza</th><th>Incarico</th></tr>
+                    <tr><th>#</th><th>Attività</th><th>Area</th><th>Urgenza</th><th>Stato</th><th>Scadenza</th><th>Fornitore sugg.</th><th>Incarico</th></tr>
                   </thead>
                   <tbody>
                     {adempimenti.map(ad => (
@@ -592,6 +596,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
                         <td data-label="Urgenza"><span className="badge" style={URGENZA_COLORS[ad.urgenza] || {}}>{URGENZA_LABEL[ad.urgenza] || ad.urgenza}</span></td>
                         <td data-label="Stato"><span className="badge" style={STATO_COLORS[ad.stato] || {}}>{STATO_LABEL[ad.stato] || ad.stato}</span></td>
                         <td data-label="Scadenza" style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{ad.scadenza || '—'}</td>
+                        <td data-label="Fornitore sugg." style={{ fontSize: 12, color: 'var(--slate)' }}>{ad.fornitore_suggerito || '—'}</td>
                         <td data-label="Incarico">
                           {ad.incarico_id ? (
                             <button
@@ -673,6 +678,11 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
               <div className="modal-title">Adempimento #{String(selectedAdemp.n || '').padStart(2, '0')}</div>
               <button className="modal-close" onClick={() => setSelectedAdemp(null)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
             </div>
+            {selectedAdemp.fornitore_suggerito && (
+              <div style={{ background: '#e8f2f7', color: '#013d57', padding: '8px 14px', borderRadius: 6, fontSize: 12, marginBottom: 14, fontWeight: 600 }}>
+                Fornitore suggerito dal verbale: {selectedAdemp.fornitore_suggerito}
+              </div>
+            )}
             <div className="form-group" style={{ marginBottom: 14 }}>
               <label className="form-label">Attività</label>
               <textarea className="form-textarea" value={adempForm.attivita} onChange={e => setAdempForm(f => ({ ...f, attivita: e.target.value }))} />
