@@ -51,8 +51,11 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
   const [adempForm, setAdempForm] = useState(null)
   const [pdfUrl, setPdfUrl] = useState(null)
   const [edificiList, setEdificiList] = useState([])
+  const [fornitoriList, setFornitoriList] = useState([])
   const [savingEdificio, setSavingEdificio] = useState(false)
   const [showSectionPicker, setShowSectionPicker] = useState(false)
+  const [bozzaIncarico, setBozzaIncarico] = useState(null)
+  const [salvandoBozza, setSalvandoBozza] = useState(false)
   const [form, setForm] = useState({ attivita: '', area: 'Amministrazione', urgenza: 'media', responsabile: '', scadenza: '' })
 
   useEffect(() => {
@@ -63,6 +66,8 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
   useEffect(() => {
     supabase.from('edifici').select('id, nome').eq('stato', 'attivo').order('nome')
       .then(({ data }) => setEdificiList(data || []))
+    supabase.from('fornitori').select('id, ragione_sociale').order('ragione_sociale')
+      .then(({ data }) => setFornitoriList(data || []))
   }, [])
 
   async function cambiaEdificio(e) {
@@ -180,23 +185,60 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
     return null // stringa descrittiva (es. "entro fine mese"), non convertibile in data
   }
 
-  async function creaIncaricoDaAdemp(ademp) {
+  // Confronto "leggero": toglie forma giuridica e punteggiatura, per
+  // riconoscere corrispondenze anche quando il verbale nomina il
+  // fornitore in modo abbreviato o diverso dall'anagrafica
+  function normalizzaNome(s) {
+    return (s || '')
+      .toLowerCase()
+      .replace(/\b(s\.?r\.?l\.?|s\.?p\.?a\.?|s\.?n\.?c\.?|s\.?a\.?s\.?|di|e figli|& c\.?|ditta|impresa)\b/g, '')
+      .replace(/[^\w\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
+  function trovaCandidatiFornitore(suggerito) {
+    const norm = normalizzaNome(suggerito)
+    if (!norm) return []
+    const parole = norm.split(' ').filter(w => w.length > 2)
+    return fornitoriList.filter(f => {
+      const normF = normalizzaNome(f.ragione_sociale)
+      if (!normF) return false
+      if (normF.includes(norm) || norm.includes(normF)) return true
+      return parole.some(p => normF.includes(p))
+    })
+  }
+
+  function apriBozzaIncarico(ademp) {
     if (ademp.incarico_id) {
       navigate('dettaglio', ademp.incarico_id)
       return
     }
+    const candidati = ademp.fornitore_suggerito ? trovaCandidatiFornitore(ademp.fornitore_suggerito) : []
+    setBozzaIncarico({
+      ademp,
+      descrizione: ademp.attivita,
+      fornitoreId: candidati.length === 1 ? candidati[0].id : '',
+      candidati,
+      scadenza: parseScadenzaToISO(ademp.scadenza) || '',
+    })
+  }
+
+  async function salvaBozzaIncarico() {
+    setSalvandoBozza(true)
     const { data: { user } } = await supabase.auth.getUser()
+    const { ademp } = bozzaIncarico
     const payload = {
       edificio_id: verbale.edificio_id || null,
-      fornitore_id: null,
-      descrizione: ademp.attivita,
+      fornitore_id: bozzaIncarico.fornitoreId || null,
+      descrizione: bozzaIncarico.descrizione,
       origine: 'verbale',
       stato: 'in_attesa',
-      data_scadenza: parseScadenzaToISO(ademp.scadenza),
+      data_scadenza: bozzaIncarico.scadenza || null,
       assegnato_da: user?.id || null,
     }
     const { data: inserted, error } = await supabase.from('incarichi').insert(payload).select().single()
-    if (error) { showToast('Errore creazione incarico: ' + error.message, 'error'); return }
+    if (error) { showToast('Errore creazione incarico: ' + error.message, 'error'); setSalvandoBozza(false); return }
 
     const { error: updErr } = await supabase.from('verbale_adempimenti').update({ incarico_id: inserted.id, stato: 'in-corso' }).eq('id', ademp.id)
     if (updErr) showToast('Incarico creato ma collegamento non salvato: ' + updErr.message, 'error')
@@ -206,11 +248,9 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
       setSelectedAdemp(s => ({ ...s, incarico_id: inserted.id }))
       setAdempForm(f => ({ ...f, stato: 'in-corso' }))
     }
-    if (ademp.fornitore_suggerito) {
-      showToast(`Incarico creato ✓ — fornitore suggerito: "${ademp.fornitore_suggerito}" (seleziona in Incarichi)`, 'success')
-    } else {
-      showToast('Incarico creato ✓', 'success')
-    }
+    showToast('Incarico creato ✓', 'success')
+    setSalvandoBozza(false)
+    setBozzaIncarico(null)
   }
 
   function escapeHtml(str) {
@@ -608,7 +648,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
                           ) : (
                             <button
                               className="btn btn-outline btn-sm"
-                              onClick={e => { e.stopPropagation(); creaIncaricoDaAdemp(ad) }}
+                              onClick={e => { e.stopPropagation(); apriBozzaIncarico(ad) }}
                             >
                               → Incarico
                             </button>
@@ -728,7 +768,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
                   <Icon icon={UTILITY_ICONS.successo} size="sm" color="var(--success)" /> Incarico creato — apri
                 </button>
               ) : (
-                <button className="btn btn-outline btn-sm" onClick={() => creaIncaricoDaAdemp(selectedAdemp)}>→ Crea incarico</button>
+                <button className="btn btn-outline btn-sm" onClick={() => apriBozzaIncarico(selectedAdemp)}>→ Crea incarico</button>
               )}
             </div>
 
@@ -740,6 +780,66 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
                 <button className="btn btn-outline" onClick={() => setSelectedAdemp(null)}>Chiudi</button>
                 <button className="btn btn-primary" onClick={salvaAdempimento}>Salva modifiche</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {bozzaIncarico && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setBozzaIncarico(null)}>
+          <div className="modal">
+            <div className="modal-header">
+              <div className="modal-title">Crea incarico da adempimento</div>
+              <button className="modal-close" onClick={() => setBozzaIncarico(null)}><Icon icon={ACTION_ICONS.chiudi} size="sm" /></button>
+            </div>
+
+            <div style={{ fontSize: 12, color: 'var(--fog)', marginBottom: 14 }}>
+              Condominio: <strong style={{ color: 'var(--ink)' }}>{edificiList.find(e => e.id === verbale.edificio_id)?.nome || 'Nessuno collegato'}</strong>
+            </div>
+
+            {bozzaIncarico.ademp.fornitore_suggerito && (
+              <div style={{ background: '#e8f2f7', color: '#013d57', padding: '8px 14px', borderRadius: 6, fontSize: 12, marginBottom: 14 }}>
+                Fornitore suggerito dal verbale: <strong>{bozzaIncarico.ademp.fornitore_suggerito}</strong>
+              </div>
+            )}
+
+            {bozzaIncarico.candidati.length > 1 && (
+              <div className="form-group" style={{ marginBottom: 14 }}>
+                <label className="form-label">Corrispondenze possibili in anagrafica</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {bozzaIncarico.candidati.map(c => (
+                    <button
+                      key={c.id}
+                      className={`task-assegnatario-chip ${bozzaIncarico.fornitoreId === c.id ? 'active' : ''}`}
+                      onClick={() => setBozzaIncarico(b => ({ ...b, fornitoreId: c.id }))}
+                    >
+                      {c.ragione_sociale}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="form-group" style={{ marginBottom: 14 }}>
+              <label className="form-label">Fornitore</label>
+              <select className="form-select" value={bozzaIncarico.fornitoreId} onChange={e => setBozzaIncarico(b => ({ ...b, fornitoreId: e.target.value }))}>
+                <option value="">Da assegnare</option>
+                {fornitoriList.map(f => <option key={f.id} value={f.id}>{f.ragione_sociale}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 14 }}>
+              <label className="form-label">Descrizione</label>
+              <textarea className="form-textarea" value={bozzaIncarico.descrizione} onChange={e => setBozzaIncarico(b => ({ ...b, descrizione: e.target.value }))} />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 18 }}>
+              <label className="form-label">Scadenza</label>
+              <input type="date" className="form-input" value={bozzaIncarico.scadenza} onChange={e => setBozzaIncarico(b => ({ ...b, scadenza: e.target.value }))} />
+            </div>
+
+            <div className="form-actions">
+              <button className="btn btn-outline" onClick={() => setBozzaIncarico(null)} disabled={salvandoBozza}>Annulla</button>
+              <button className="btn btn-primary" onClick={salvaBozzaIncarico} disabled={salvandoBozza}>{salvandoBozza ? 'Creazione...' : 'Crea incarico'}</button>
             </div>
           </div>
         </div>
