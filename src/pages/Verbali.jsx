@@ -52,6 +52,18 @@ export default function Verbali() {
     setLoading(false)
   }
 
+  async function ricalcolaCompletamento(verbaleId) {
+    const { data } = await supabase.from('verbale_adempimenti').select('stato').eq('verbale_id', verbaleId)
+    const stati = (data || []).map(x => x.stato)
+    const tuttiRisolti = stati.length > 0 && stati.every(s => s === 'completato' || s === 'annullato')
+    setVerbaliCompletati(prev => {
+      const nuovo = new Set(prev)
+      if (tuttiRisolti) nuovo.add(verbaleId)
+      else nuovo.delete(verbaleId)
+      return nuovo
+    })
+  }
+
   function setSort(mode) {
     if (sortMode === mode) setSortDir(d => d * -1)
     else { setSortMode(mode); setSortDir(mode === 'data' ? -1 : 1) }
@@ -157,6 +169,7 @@ export default function Verbali() {
           <VerbaleReport
             verbale={current}
             onBack={() => setCurrent(null)}
+            onAdempimentiChanged={ricalcolaCompletamento}
             onEdificioChanged={(edificio_id, nome) => {
               setCurrent(c => ({ ...c, edificio_id, edifici: nome ? { nome } : null }))
               load()

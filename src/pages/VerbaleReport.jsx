@@ -39,7 +39,7 @@ const TABS = [
   { key: 'adempimenti', label: 'Adempimenti' },
 ]
 
-export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
+export default function VerbaleReport({ verbale, onEdificioChanged, onAdempimentiChanged, onBack }) {
   const { showToast, navigate } = useApp()
   const [tab, setTab] = useState('anagrafica')
   const [partecipanti, setPartecipanti] = useState([])
@@ -146,6 +146,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
     showToast('Adempimento aggiornato ✓', 'success')
     setSelectedAdemp(null)
     setAdempForm(null)
+    onAdempimentiChanged?.(verbale.id)
   }
 
   async function eliminaAdemp(id) {
@@ -154,6 +155,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
     if (error) { showToast('Errore eliminazione', 'error'); return }
     showToast('Adempimento eliminato', 'info')
     load()
+    onAdempimentiChanged?.(verbale.id)
   }
 
   async function aggiungiAdemp() {
@@ -171,6 +173,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
     setForm({ attivita: '', area: 'Amministrazione', urgenza: 'media', responsabile: '', scadenza: '' })
     showToast('Adempimento aggiunto ✓', 'success')
     load()
+    onAdempimentiChanged?.(verbale.id)
   }
 
   function parseScadenzaToISO(str) {
@@ -251,6 +254,7 @@ export default function VerbaleReport({ verbale, onEdificioChanged, onBack }) {
     showToast('Incarico creato ✓', 'success')
     setSalvandoBozza(false)
     setBozzaIncarico(null)
+    onAdempimentiChanged?.(verbale.id)
   }
 
   function escapeHtml(str) {
