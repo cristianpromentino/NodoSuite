@@ -22,16 +22,30 @@ export default function Verbali() {
   const [sortMode, setSortMode] = useState('data')
   const [sortDir, setSortDir] = useState(-1)
   const [showImport, setShowImport] = useState(false)
+  const [verbaliCompletati, setVerbaliCompletati] = useState(new Set())
 
   useEffect(() => { load() }, [])
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase
-      .from('verbali')
-      .select('*, edifici(nome)')
-      .order('created_at', { ascending: false })
+    const [{ data }, { data: adempimenti }] = await Promise.all([
+      supabase.from('verbali').select('*, edifici(nome)').order('created_at', { ascending: false }),
+      supabase.from('verbale_adempimenti').select('verbale_id, stato'),
+    ])
     setVerbali(data || [])
+
+    // Un verbale è "completato" quando TUTTI i suoi adempimenti hanno stato 'completato'
+    const statiPerVerbale = {}
+    ;(adempimenti || []).forEach(a => {
+      if (!statiPerVerbale[a.verbale_id]) statiPerVerbale[a.verbale_id] = []
+      statiPerVerbale[a.verbale_id].push(a.stato)
+    })
+    const completati = new Set(
+      Object.entries(statiPerVerbale)
+        .filter(([, stati]) => stati.length > 0 && stati.every(s => s === 'completato'))
+        .map(([id]) => id)
+    )
+    setVerbaliCompletati(completati)
     setLoading(false)
   }
 
@@ -106,7 +120,7 @@ export default function Verbali() {
           ) : items.map(v => (
             <div
               key={v.id}
-              className={`verbali-item ${current?.id === v.id ? 'active' : ''}`}
+              className={`verbali-item ${current?.id === v.id ? 'active' : ''} ${verbaliCompletati.has(v.id) ? 'verbale-completato' : ''}`}
               onClick={() => setCurrent(v)}
             >
               <div className="verbali-item-name">{v.titolo || v.anagrafica?.denominazione || v.edifici?.nome || 'Verbale'}</div>
