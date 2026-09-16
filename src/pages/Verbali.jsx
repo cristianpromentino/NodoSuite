@@ -40,9 +40,12 @@ export default function Verbali() {
       if (!statiPerVerbale[a.verbale_id]) statiPerVerbale[a.verbale_id] = []
       statiPerVerbale[a.verbale_id].push(a.stato)
     })
+    // Un verbale è "completato" quando TUTTI i suoi adempimenti sono
+    // risolti — sia perché completati, sia perché annullati (l'IA a volte
+    // genera adempimenti che non derivano davvero da una decisione assembleare)
     const completati = new Set(
       Object.entries(statiPerVerbale)
-        .filter(([, stati]) => stati.length > 0 && stati.every(s => s === 'completato'))
+        .filter(([, stati]) => stati.length > 0 && stati.every(s => s === 'completato' || s === 'annullato'))
         .map(([id]) => id)
     )
     setVerbaliCompletati(completati)
