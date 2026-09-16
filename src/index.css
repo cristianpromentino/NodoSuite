@@ -141,6 +141,7 @@ body {
 
 /* CARDS */
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 14px; margin-bottom: 28px; }
+.stat-grid-apa { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 14px; }
 .stat-card {
   background: var(--white); border: 1px solid var(--line);
   border-radius: var(--radius-card); padding: 16px 18px;
