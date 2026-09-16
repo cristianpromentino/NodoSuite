@@ -26,6 +26,15 @@ export default function Verbali() {
 
   useEffect(() => { load() }, [])
 
+  useEffect(() => {
+    const apriId = sessionStorage.getItem('nodosuite:apriVerbaleId')
+    if (apriId && verbali.length > 0) {
+      sessionStorage.removeItem('nodosuite:apriVerbaleId')
+      const v = verbali.find(x => x.id === apriId)
+      if (v) setCurrent(v)
+    }
+  }, [verbali])
+
   async function load() {
     setLoading(true)
     const [{ data }, { data: adempimenti }] = await Promise.all([

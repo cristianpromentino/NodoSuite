@@ -24,14 +24,36 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ totale: 0, in_attesa: 0, in_corso: 0, bloccato: 0, completato: 0, scaduti: 0, in_scadenza: 0 })
   const [recenti, setRecenti] = useState([])
   const [taskRecenti, setTaskRecenti] = useState([])
+  const [apaStats, setApaStats] = useState({ completati: 0, inCorso: 0, daFare: 0 })
+  const [verbaliLavorati, setVerbaliLavorati] = useState([])
+  const [showVerbaliLavorati, setShowVerbaliLavorati] = useState(false)
 
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
-    const [{ data }, { data: task }] = await Promise.all([
+    const [{ data }, { data: task }, { data: verbali }, { data: adempimenti }] = await Promise.all([
       supabase.from('incarichi').select('*, edifici(nome), fornitori(ragione_sociale)').order('created_at', { ascending: false }),
       supabase.from('attivita_interne').select('*, edifici(nome)').order('created_at', { ascending: false }).limit(5),
+      supabase.from('verbali').select('id, titolo, anagrafica, edifici(nome)'),
+      supabase.from('verbale_adempimenti').select('verbale_id, stato'),
     ])
+
+    const statiPerVerbale = {}
+    let completati = 0, inCorso = 0, daFare = 0
+    ;(adempimenti || []).forEach(a => {
+      if (!statiPerVerbale[a.verbale_id]) statiPerVerbale[a.verbale_id] = []
+      statiPerVerbale[a.verbale_id].push(a.stato)
+      if (a.stato === 'completato') completati++
+      else if (a.stato === 'in-corso') inCorso++
+      else if (a.stato === 'da-fare') daFare++
+    })
+    setApaStats({ completati, inCorso, daFare })
+
+    const lavorati = (verbali || []).filter(v => {
+      const stati = statiPerVerbale[v.id] || []
+      return stati.length > 0 && stati.every(s => s === 'completato' || s === 'annullato')
+    })
+    setVerbaliLavorati(lavorati)
 
     if (task && task.length > 0) {
       const { data: assegnazioni } = await supabase
@@ -115,10 +137,6 @@ export default function Dashboard() {
         <div className="stat-card in-scadenza">
           <div className="stat-card-value">{stats.in_scadenza}</div>
           <div className="stat-card-label">In scadenza (7gg)</div>
-        </div>
-        <div className="stat-card urgente">
-          <div className="stat-card-value">{stats.bloccato}</div>
-          <div className="stat-card-label">Bloccati</div>
         </div>
         <div className="stat-card completati">
           <div className="stat-card-value">{stats.completato}</div>
@@ -216,6 +234,61 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      <div className="table-wrap" style={{ marginBottom: 20 }}>
+        <div className="table-header">
+          <div className="table-title">Verbali — Adempimenti (APA)</div>
+        </div>
+        <div className="stat-grid" style={{ marginBottom: 0 }}>
+          <div className="stat-card">
+            <div className="stat-card-value" style={{ color: '#16a34a' }}>{apaStats.completati}</div>
+            <div className="stat-card-label">APA completati</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-value" style={{ color: '#1e40af' }}>{apaStats.inCorso}</div>
+            <div className="stat-card-label">APA in corso</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-card-value" style={{ color: '#92400e' }}>{apaStats.daFare}</div>
+            <div className="stat-card-label">APA da fare</div>
+          </div>
+          <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => setShowVerbaliLavorati(true)}>
+            <div className="stat-card-value">{verbaliLavorati.length}</div>
+            <div className="stat-card-label">Verbali interamente lavorati</div>
+            <button className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={e => { e.stopPropagation(); setShowVerbaliLavorati(true) }}>Vedi elenco</button>
+          </div>
+        </div>
+      </div>
+
+      {showVerbaliLavorati && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowVerbaliLavorati(false)}>
+          <div className="modal">
+            <div className="modal-header">
+              <div className="modal-title">Verbali interamente lavorati</div>
+              <button className="modal-close" onClick={() => setShowVerbaliLavorati(false)}>✕</button>
+            </div>
+            {verbaliLavorati.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--fog)' }}>Nessun verbale con tutti gli adempimenti risolti al momento.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {verbaliLavorati.map(v => (
+                  <div
+                    key={v.id}
+                    style={{ padding: '10px 4px', borderBottom: '1px solid var(--line)', cursor: 'pointer' }}
+                    onClick={() => {
+                      sessionStorage.setItem('nodosuite:apriVerbaleId', v.id)
+                      navigate('verbali')
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{v.titolo || v.anagrafica?.denominazione || v.edifici?.nome || 'Verbale'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--fog)' }}>{v.edifici?.nome || ''}{v.anagrafica?.data_assemblea ? ' · ' + v.anagrafica.data_assemblea : ''}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
