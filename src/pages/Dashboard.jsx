@@ -148,15 +148,15 @@ export default function Dashboard() {
 
       <div className="table-title" style={{ marginBottom: 14 }}>Verbali — Adempimenti (APA)</div>
       <div className="stat-grid-apa" style={{ marginBottom: 28 }}>
-        <div className="stat-card" style={{ background: 'var(--primary-light)' }}>
+        <div className="stat-card" style={{ background: 'var(--primary)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-evenly' }}>
             <div>
-              <div className="stat-card-value" style={{ color: 'var(--primary)' }}>{totaleVerbali}</div>
-              <div className="stat-card-label">Verbali</div>
+              <div className="stat-card-value" style={{ color: '#fff' }}>{totaleVerbali}</div>
+              <div className="stat-card-label" style={{ color: 'rgba(255,255,255,.75)' }}>Verbali</div>
             </div>
             <div>
-              <div className="stat-card-value" style={{ color: 'var(--primary)' }}>{apaStats.totale}</div>
-              <div className="stat-card-label">APA totali</div>
+              <div className="stat-card-value" style={{ color: '#fff' }}>{apaStats.totale}</div>
+              <div className="stat-card-label" style={{ color: 'rgba(255,255,255,.75)' }}>APA totali</div>
             </div>
           </div>
         </div>
