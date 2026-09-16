@@ -333,6 +333,8 @@ tbody tr.row-scaduto:hover { background: rgba(220,38,38,.09); }
 }
 .verbali-item:hover { background: var(--paper); }
 .verbali-item.active { background: var(--primary-light); }
+.verbali-item.verbale-completato { border-left: 3px solid var(--success); padding-left: 9px; }
+.verbali-item.verbale-completato:not(.active) { background: #f0fdf4; }
 .verbali-item-name { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
 .verbali-item-meta { font-size: 11px; color: var(--fog); }
 .verbali-item-del {
