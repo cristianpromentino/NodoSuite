@@ -144,28 +144,24 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="table-wrap" style={{ marginBottom: 20 }}>
-        <div className="table-header">
-          <div className="table-title">Verbali — Adempimenti (APA)</div>
+      <div className="table-title" style={{ marginBottom: 14 }}>Verbali — Adempimenti (APA)</div>
+      <div className="stat-grid-apa" style={{ marginBottom: 28 }}>
+        <div className="stat-card">
+          <div className="stat-card-value" style={{ color: '#16a34a' }}>{apaStats.completati}</div>
+          <div className="stat-card-label">APA completati</div>
         </div>
-        <div className="stat-grid-apa">
-          <div className="stat-card">
-            <div className="stat-card-value" style={{ color: '#16a34a' }}>{apaStats.completati}</div>
-            <div className="stat-card-label">APA completati</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-value" style={{ color: '#1e40af' }}>{apaStats.inCorso}</div>
-            <div className="stat-card-label">APA in corso</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card-value" style={{ color: '#92400e' }}>{apaStats.daFare}</div>
-            <div className="stat-card-label">APA da fare</div>
-          </div>
-          <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => setShowVerbaliLavorati(true)}>
-            <div className="stat-card-value">{verbaliLavorati.length}</div>
-            <div className="stat-card-label">Verbali completati</div>
-            <button className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={e => { e.stopPropagation(); setShowVerbaliLavorati(true) }}>Vedi elenco</button>
-          </div>
+        <div className="stat-card">
+          <div className="stat-card-value" style={{ color: '#1e40af' }}>{apaStats.inCorso}</div>
+          <div className="stat-card-label">APA in corso</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-card-value" style={{ color: '#92400e' }}>{apaStats.daFare}</div>
+          <div className="stat-card-label">APA da fare</div>
+        </div>
+        <div className="stat-card" style={{ cursor: 'pointer' }} onClick={() => setShowVerbaliLavorati(true)}>
+          <div className="stat-card-value">{verbaliLavorati.length}</div>
+          <div className="stat-card-label">Verbali completati</div>
+          <button className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={e => { e.stopPropagation(); setShowVerbaliLavorati(true) }}>Vedi elenco</button>
         </div>
       </div>
 
