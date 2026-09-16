@@ -24,7 +24,8 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ totale: 0, in_attesa: 0, in_corso: 0, bloccato: 0, completato: 0, scaduti: 0, in_scadenza: 0 })
   const [recenti, setRecenti] = useState([])
   const [taskRecenti, setTaskRecenti] = useState([])
-  const [apaStats, setApaStats] = useState({ completati: 0, inCorso: 0, daFare: 0 })
+  const [apaStats, setApaStats] = useState({ completati: 0, inCorso: 0, daFare: 0, totale: 0 })
+  const [totaleVerbali, setTotaleVerbali] = useState(0)
   const [verbaliLavorati, setVerbaliLavorati] = useState([])
   const [showVerbaliLavorati, setShowVerbaliLavorati] = useState(false)
 
@@ -47,7 +48,8 @@ export default function Dashboard() {
       else if (a.stato === 'in-corso') inCorso++
       else if (a.stato === 'da-fare') daFare++
     })
-    setApaStats({ completati, inCorso, daFare })
+    setApaStats({ completati, inCorso, daFare, totale: (adempimenti || []).length })
+    setTotaleVerbali((verbali || []).length)
 
     const lavorati = (verbali || []).filter(v => {
       const stati = statiPerVerbale[v.id] || []
@@ -146,6 +148,18 @@ export default function Dashboard() {
 
       <div className="table-title" style={{ marginBottom: 14 }}>Verbali — Adempimenti (APA)</div>
       <div className="stat-grid-apa" style={{ marginBottom: 28 }}>
+        <div className="stat-card" style={{ background: 'var(--primary-light)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-evenly' }}>
+            <div>
+              <div className="stat-card-value" style={{ color: 'var(--primary)' }}>{totaleVerbali}</div>
+              <div className="stat-card-label">Verbali</div>
+            </div>
+            <div>
+              <div className="stat-card-value" style={{ color: 'var(--primary)' }}>{apaStats.totale}</div>
+              <div className="stat-card-label">APA totali</div>
+            </div>
+          </div>
+        </div>
         <div className="stat-card">
           <div className="stat-card-value" style={{ color: '#16a34a' }}>{apaStats.completati}</div>
           <div className="stat-card-label">APA completati</div>
